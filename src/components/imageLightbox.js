@@ -3,7 +3,7 @@ import { scrollToBottom } from './ui.js'; // If needed, but probably not
 
 export function processImagesInBubble(bubble) {
   const images = bubble.querySelectorAll('img');
-  images.forEach(img => {
+  images.forEach(async img => {
     // Skip if the image has already been processed
     if (img.dataset.fullSrc) {
       return;
@@ -56,6 +56,47 @@ export function processImagesInBubble(bubble) {
         openLightbox(originalSrc);
       }
     });
+
+    // Fetch and display source inline (overlay)
+    try {
+      const filename = pathname.split('/').pop();
+      const response = await fetch(`/api/public/images/${filename}/meta`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.source) {
+          // Create wrapper
+          const wrapper = document.createElement('div');
+          wrapper.style.position = 'relative';
+          wrapper.style.display = 'inline-block'; // Or block, depending on layout
+          wrapper.style.maxWidth = '100%';
+
+          // Insert wrapper before image
+          if (img.parentNode) {
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+          }
+
+          const sourceDiv = document.createElement('div');
+          sourceDiv.textContent = `Quelle: ${data.source}`;
+          sourceDiv.style.position = 'absolute';
+          sourceDiv.style.bottom = '0';
+          sourceDiv.style.left = '0';
+          sourceDiv.style.width = '100%';
+          sourceDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+          sourceDiv.style.color = 'white';
+          sourceDiv.style.padding = '4px 8px';
+          sourceDiv.style.fontSize = '0.75rem';
+          sourceDiv.style.boxSizing = 'border-box';
+          sourceDiv.style.borderBottomLeftRadius = getComputedStyle(img).borderBottomLeftRadius;
+          sourceDiv.style.borderBottomRightRadius = getComputedStyle(img).borderBottomRightRadius;
+          sourceDiv.style.pointerEvents = 'none'; // Let clicks pass through to image (lightbox)
+
+          wrapper.appendChild(sourceDiv);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch image source for inline display', e);
+    }
   });
 }
 
@@ -87,9 +128,9 @@ export async function openLightbox(src) {
   lightbox.id = 'lightbox';
   lightbox.className = 'lightbox';
   lightbox.innerHTML = `
-    <div class="lightbox-content" style="position: relative;">
-      <img src="${src}" alt="Full image">
-      ${sourceText ? `<div class="lightbox-source" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px; pointer-events: none;">${sourceText}</div>` : ''}
+    <div class="lightbox-content" style="position: relative; display: flex; flex-direction: column; align-items: center;">
+      <img src="${src}" alt="Full image" style="max-height: 85vh;">
+      ${sourceText ? `<div class="lightbox-source" style="margin-top: 10px; color: white; font-size: 14px; text-align: center;">${sourceText}</div>` : ''}
       <button class="lightbox-close">&times;</button>
     </div>
   `;
