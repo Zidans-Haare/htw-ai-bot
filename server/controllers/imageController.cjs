@@ -134,4 +134,28 @@ module.exports = (app) => {
       processingPromises.delete(filename);
     }
   });
+
+  // Public endpoint to get image metadata (source, description)
+  app.get('/api/public/images/:filename/meta', async (req, res) => {
+    const { filename } = req.params;
+    try {
+      // We need to access the DB here. Since this controller is initialized in server.cjs
+      // where prisma is available via require('./controllers/db.cjs'), we can import it here.
+      const { prisma } = require('./db.cjs');
+
+      const image = await prisma.images.findUnique({
+        where: { filename },
+        select: { source: true, description: true }
+      });
+
+      if (!image) {
+        return res.status(404).json({ message: 'Image not found' });
+      }
+
+      res.json(image);
+    } catch (error) {
+      console.error('Error fetching image metadata:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
 };

@@ -32,6 +32,7 @@ export function initImages() {
                     <label for="image-upload-input" class="cursor-pointer btn-primary px-6 py-2 rounded-full">Bild wählen</label>
                     <p id="image-file-name" class="text-sm text-gray-500 mt-2">Kein Bild ausgewählt</p>
                 </div>
+                <input type="text" id="image-source-input" class="p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Quelle (Pflichtfeld)...">
                 <textarea id="image-description-input" class="grow p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Bildbeschreibung..."></textarea>
                 <button id="image-upload-button" class="btn-primary px-6 py-2 rounded-full">Hochladen</button>
             </div>
@@ -46,6 +47,7 @@ export function initImages() {
 
     imagesList = document.getElementById('images-list');
     const uploadInput = document.getElementById('image-upload-input');
+    const sourceInput = document.getElementById('image-source-input');
     const descriptionInput = document.getElementById('image-description-input');
     const uploadButton = document.getElementById('image-upload-button');
     const fileNameDisplay = document.getElementById('image-file-name');
@@ -58,7 +60,7 @@ export function initImages() {
         }
     });
 
-    uploadButton.addEventListener('click', () => handleImageUpload(uploadInput, descriptionInput));
+    uploadButton.addEventListener('click', () => handleImageUpload(uploadInput, sourceInput, descriptionInput));
 
     // Load images when the view is shown
     const observer = new MutationObserver((mutations) => {
@@ -123,7 +125,7 @@ function renderImages(images, append = false) {
                     <button class="copy-url-btn text-white hover:text-(--accent-color) transition-colors" data-url="/uploads/images/${image.filename}" title="URL kopieren">
                         <i class="fas fa-copy fa-lg"></i>
                     </button>
-                    <button class="edit-image-btn text-white hover:text-yellow-400 transition-colors ml-4" data-filename="${image.filename}" data-description="${image.description || ''}" title="Beschreibung bearbeiten">
+                    <button class="edit-image-btn text-white hover:text-yellow-400 transition-colors ml-4" data-filename="${image.filename}" data-description="${image.description || ''}" data-source="${image.source || ''}" title="Bearbeiten">
                         <i class="fas fa-pencil-alt fa-lg"></i>
                     </button>
                     <button class="delete-image-btn text-white hover:text-red-500 transition-colors ml-4" data-filename="${image.filename}" title="Löschen">
@@ -133,6 +135,7 @@ function renderImages(images, append = false) {
             </div>
             <div class="p-2">
                 <p class="text-sm text-gray-700 truncate" title="${image.description || ''}">${image.description || ''}</p>
+                <p class="text-xs text-gray-500 truncate" title="Quelle: ${image.source || 'Unbekannt'}">Quelle: ${image.source || 'Unbekannt'}</p>
                 <p class="text-xs text-gray-500 truncate" title="${image.filename}">${image.filename}</p>
             </div>
         </div>
@@ -162,12 +165,17 @@ function renderImages(images, append = false) {
     });
 }
 
-async function handleImageUpload(inputElement, descriptionElement) {
+async function handleImageUpload(inputElement, sourceElement, descriptionElement) {
     const file = inputElement.files[0];
+    const source = sourceElement.value.trim();
     const description = descriptionElement.value.trim();
 
     if (!file) {
         alert('Noch kein Bild gewählt.');
+        return;
+    }
+    if (!source) {
+        alert('Bitte eine Quelle angeben.');
         return;
     }
     if (!description) {
@@ -177,6 +185,7 @@ async function handleImageUpload(inputElement, descriptionElement) {
 
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('source', source);
     formData.append('description', description);
 
     try {
@@ -208,6 +217,7 @@ async function handleImageUpload(inputElement, descriptionElement) {
 
         const result = await response.json();
         inputElement.value = ''; // Clear the input
+        sourceElement.value = ''; // Clear source
         descriptionElement.value = ''; // Clear the textarea
         document.getElementById('image-file-name').textContent = 'Kein Bild ausgewählt';
         await loadImages(); // Refresh the gallery
@@ -232,14 +242,17 @@ function handleEditImage(event) {
     const button = event.currentTarget;
     const filename = button.dataset.filename;
     const currentDescription = button.dataset.description;
+    const currentSource = button.dataset.source;
 
     const modal = document.getElementById('edit-image-modal');
     const preview = document.getElementById('edit-image-preview');
+    const sourceInput = document.getElementById('edit-image-source-input');
     const descriptionInput = document.getElementById('edit-image-description-input');
     const cancelButton = document.getElementById('edit-image-cancel');
     const saveButton = document.getElementById('edit-image-save');
 
     preview.src = `/uploads/images/${filename}`;
+    sourceInput.value = currentSource;
     descriptionInput.value = currentDescription;
 
     modal.classList.remove('hidden');
@@ -253,7 +266,9 @@ function handleEditImage(event) {
 
     saveButton.onclick = async () => {
         const newDescription = descriptionInput.value.trim();
-        if (newDescription === currentDescription) {
+        const newSource = sourceInput.value.trim();
+
+        if (newDescription === currentDescription && newSource === currentSource) {
             closeAndCleanup();
             return;
         }
@@ -264,7 +279,10 @@ function handleEditImage(event) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ description: newDescription })
+                body: JSON.stringify({
+                    description: newDescription,
+                    source: newSource
+                })
             });
 
             if (!response.ok) {

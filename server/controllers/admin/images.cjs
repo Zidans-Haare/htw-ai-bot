@@ -60,14 +60,15 @@ module.exports = (authMiddleware) => {
             }
 
             try {
-                // Extract description from the request body
-                const { description } = req.body;
+                // Extract description and source from the request body
+                const { description, source } = req.body;
 
                 // Save image info to the database
                 const newImage = await Images.create({
                     data: {
                         filename: req.file.filename,
-                        description: description || null // Save description, or null if it's empty
+                        description: description || null, // Save description, or null if it's empty
+                        source: source || null // Save source, or null if it's empty
                     }
                 });
                 res.status(201).json(newImage);
@@ -87,7 +88,7 @@ module.exports = (authMiddleware) => {
     // PUT (update) an image description
     router.put('/images/:filename', authMiddleware, async (req, res) => {
         const { filename } = req.params;
-        const { description } = req.body;
+        const { description, source } = req.body;
 
         if (typeof description !== 'string') {
             return res.status(400).json({ message: 'Ungültige Beschreibung.' });
@@ -96,7 +97,10 @@ module.exports = (authMiddleware) => {
         try {
             const updatedImage = await Images.update({
                 where: { filename },
-                data: { description: description.trim() }
+                data: {
+                    description: description !== undefined ? description.trim() : undefined,
+                    source: source !== undefined ? source.trim() : undefined
+                }
             });
 
             res.status(200).json(updatedImage);

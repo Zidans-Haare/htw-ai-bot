@@ -18,7 +18,7 @@ export function processImagesInBubble(bubble) {
       // If not a valid URL, assume it's relative and use as is
       pathname = originalSrc;
     }
-    
+
     if (!pathname.startsWith('/uploads/images/')) return; // Only handle our uploads
 
     img.dataset.fullSrc = originalSrc; // Store original for lightbox
@@ -59,13 +59,37 @@ export function processImagesInBubble(bubble) {
   });
 }
 
-export function openLightbox(src) {
+export async function openLightbox(src) {
+  let filename;
+  try {
+    const url = new URL(src, window.location.origin);
+    filename = url.pathname.split('/').pop();
+  } catch (e) {
+    filename = src.split('/').pop();
+  }
+
+  let sourceText = '';
+  if (filename) {
+    try {
+      const response = await fetch(`/api/public/images/${filename}/meta`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.source) {
+          sourceText = `Quelle: ${data.source}`;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch image metadata', e);
+    }
+  }
+
   const lightbox = document.createElement('div');
   lightbox.id = 'lightbox';
   lightbox.className = 'lightbox';
   lightbox.innerHTML = `
-    <div class="lightbox-content">
+    <div class="lightbox-content" style="position: relative;">
       <img src="${src}" alt="Full image">
+      ${sourceText ? `<div class="lightbox-source" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px; pointer-events: none;">${sourceText}</div>` : ''}
       <button class="lightbox-close">&times;</button>
     </div>
   `;
