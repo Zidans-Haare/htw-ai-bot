@@ -44,14 +44,26 @@ async function chatCompletion(messages, options = {}) {
   const temperature = options.temperature || parseFloat(process.env[prefix + 'AI_TEMPERATURE']);
   const maxTokens = options.maxTokens || parseInt(process.env[prefix + 'AI_MAX_TOKENS']);
 
-  const response = await client.chat.completions.create({
+  const request = {
     model,
     messages,
     temperature,
     max_tokens: maxTokens,
-  });
+  };
 
-  return { content: response.choices[0].message.content };
+  if (options.tools && options.tools.length > 0) {
+    request.tools = options.tools;
+    request.tool_choice = options.tool_choice || 'auto';
+  }
+
+  const response = await client.chat.completions.create(request);
+
+  const message = response.choices[0].message;
+  return {
+    content: message.content,
+    tool_calls: message.tool_calls,
+    finish_reason: response.choices[0].finish_reason,
+  };
 }
 
 async function* chatCompletionStream(messages, options = {}) {

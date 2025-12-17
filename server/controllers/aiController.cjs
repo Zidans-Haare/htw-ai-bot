@@ -6,6 +6,7 @@ const { trackSession, trackChatInteraction, trackArticleView, extractArticleIds 
 const { chatCompletion, chatCompletionStream } = require('../utils/aiProvider');
 const vectorStore = require('../lib/vectorStore');
 const { buildOpenMensaContext, shouldHandleOpenMensa } = require('../utils/openmensa');
+const { getMcpTools, executeMcpTool } = require('../utils/mcpTools');
 
 // Lazy import to avoid immediate API key check
 let categorizeConversation = null;
@@ -353,11 +354,18 @@ async function streamChat(req, res) {
 
       If multiple persons are responsible, briefly explain the difference between them and provide full contact data for each.
 
-      If there are diverging Answers for long and short term students, and the user did not yet specify their status,
+      If there are diverging Answers for long and short term students, and the user did not specify their status,
       ask for clarification and point out the difference.
 
+      **IMPORTANT: Use available tools when needed**
+      You have access to various tools that can help you provide accurate, up-to-date information. When a user asks about:
+      - Mensa menus, canteen information, or food services: Use the OpenMensa tools to get current data
+      - Library resources or documentation: Use Context7 tools to find relevant docs
+      - Any external data or services: Check if appropriate tools are available
 
-      **Knowledgebase of the HTW Desden**:
+      Always use tools when they can provide more accurate or current information than your training data.
+
+      **Knowledgebase of the HTW Dresden**:
       ${hochschulContent}
 
       **Image List**:
@@ -369,7 +377,7 @@ async function streamChat(req, res) {
 
       --
 
-      If you can not answer a question about the HTW Dresden from the Knowledgebase or the OpenMensa data,
+      If you can not answer a question about the HTW Dresden from the Knowledgebase, available tools, or the OpenMensa data,
       add the chars "<+>" at the end of the answer. If you can explain that there are currently keine Daten or the Mensa is closed and offer guidance, do NOT append "<+>".
 
       --
@@ -390,18 +398,64 @@ async function streamChat(req, res) {
       { role: 'user', content: prompt },
     ];
 
+    // Get MCP tools
+    const mcpTools = await getMcpTools();
+    const tools = mcpTools.map(t => t.tool);
+    console.log(`Loaded ${tools.length} MCP tools: ${tools.map(t => t.function.name).join(', ')}`);
+
     let fullResponseText = '';
+    let finalMessages = messagesPayload;
 
-    if (process.env.AI_STREAMING === 'true') {
-      const stream = chatCompletionStream(messagesPayload, { apiKey: userApiKey, temperature: 0.2 });
+    // Tool calling loop
+    const toolStatuses = [];
+    for (let i = 0; i < 5; i++) { // Max 5 iterations
+      const response = await chatCompletion(finalMessages, {
+        apiKey: userApiKey,
+        temperature: 0.2,
+        tools: tools.length > 0 ? tools : undefined,
+      });
 
-      for await (const chunk of stream) {
-        fullResponseText += chunk.token;
+      if (response.tool_calls && response.tool_calls.length > 0) {
+        // Collect tool status for frontend
+        for (const toolCall of response.tool_calls) {
+          const tool = mcpTools.find(t => t.tool.function.name === toolCall.function.name);
+          if (tool) {
+            toolStatuses.push(`Using Tool: ${tool.tool.function.name}...`);
+          }
+        }
+
+        // Execute tools
+        finalMessages.push({ role: 'assistant', content: response.content, tool_calls: response.tool_calls });
+        for (const toolCall of response.tool_calls) {
+          try {
+            const result = await executeMcpTool(toolCall, mcpTools);
+            finalMessages.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
+          } catch (error) {
+            console.error('Tool execution error:', error);
+            finalMessages.push({ role: 'tool', tool_call_id: toolCall.id, content: `Error: ${error.message}` });
+          }
+        }
+      } else {
+        fullResponseText = response.content || '';
+        break;
       }
-    } else {
-      const response = await chatCompletion(messagesPayload, { apiKey: userApiKey, temperature: 0.2 });
-      fullResponseText = response.content;
     }
+
+    // Set final response
+    if (!fullResponseText) {
+      fullResponseText = 'No response generated.';
+    }
+
+    // Save AI message to DB
+    await Message.create({
+      data: {
+        conversation_id: conversation.id,
+        role: 'assistant',
+        content: fullResponseText,
+        created_at: new Date(),
+      },
+    });
+    console.log(`Saved AI message to DB: ${fullResponseText}`);
 
     if (openMensaMetadata && /<\+>\s*$/.test(fullResponseText)) {
       fullResponseText = fullResponseText.replace(/\s*<\+>\s*$/, '').trimEnd();
@@ -458,6 +512,10 @@ async function streamChat(req, res) {
       images: imagesForPayload,
       imageBaseUrl: normalizedImageBaseUrl,
     };
+
+    if (toolStatuses.length > 0) {
+      responsePayload.toolStatuses = toolStatuses;
+    }
 
     if (openMensaMetadata) {
       responsePayload.openMensa = openMensaMetadata;
