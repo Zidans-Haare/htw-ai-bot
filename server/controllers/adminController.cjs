@@ -42,8 +42,9 @@ module.exports = (getSession, logAction, options = {}) => {
   adminRouter.use(require('./admin/images.cjs')(authMiddleware));
   adminRouter.use(require('./admin/documents.cjs')(authMiddleware));
    adminRouter.use(require('./admin/ai.cjs')(authMiddleware));
-    adminRouter.use('/backup', require('./admin/backup.cjs')(authMiddleware));
-   adminRouter.use('/conversations', authMiddleware, require('./admin/conversations.cjs'));
+     adminRouter.use('/backup', require('./admin/backup.cjs')(authMiddleware));
+    adminRouter.use('/conversations', authMiddleware, require('./admin/conversations.cjs'));
+    adminRouter.use('/mcp-servers', require('./admin/mcpServers.cjs')(authMiddleware));
 
    router.use('/admin', adminRouter);
 

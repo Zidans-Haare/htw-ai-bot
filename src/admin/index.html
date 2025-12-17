@@ -63,10 +63,14 @@
              <i class="fa-solid fa-chart-bar w-5 text-center"></i>
              <span class="sidebar-text">Statistiken</span>
          </a>
-         <a href="#" id="btn-user" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+          <a href="#" id="btn-mcp" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+            <i class="fa-solid fa-server w-5 text-center"></i>
+            <span class="sidebar-text">MCP Servers</span>
+          </a>
+          <a href="#" id="btn-user" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
             <i class="fa-solid fa-users w-5 text-center"></i>
             <span class="sidebar-text">Benutzer</span>
-        </a>
+          </a>
     </nav>
     <div class="mt-auto">
         <div id="user-session-info" class="px-4 py-2 mb-2 text-center text-sm text-(--secondary-text) sidebar-text">
@@ -136,10 +140,14 @@
                  <i class="fa-solid fa-chart-bar w-5 text-center"></i>
                  <span>Statistiken</span>
              </a>
-             <a href="#" id="mobile-btn-user" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+              <a href="#" id="mobile-btn-mcp" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+                <i class="fa-solid fa-server w-5 text-center"></i>
+                <span>MCP Servers</span>
+              </a>
+              <a href="#" id="mobile-btn-user" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
                 <i class="fa-solid fa-users w-5 text-center"></i>
                 <span>Benutzer</span>
-            </a>
+              </a>
         </nav>
         <div class="px-4 pb-4">
             <div id="mobile-user-session-info" class="px-4 py-2 mb-2 text-center text-sm text-(--secondary-text)">
@@ -354,8 +362,12 @@
           <!-- Backups will be listed here -->
         </div>
       </div>
-      <!-- User Management View -->
-    <div id="user-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
+       <!-- MCP Servers View -->
+       <div id="mcp-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
+         <!-- MCP Servers content will be added here -->
+       </div>
+       <!-- User Management View -->
+     <div id="user-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
       <div id="user-admin" class="p-6 space-y-4 border border-(--border-color) rounded-lg">
         <h2 class="font-semibold text-lg">Neuen Benutzer anlegen</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

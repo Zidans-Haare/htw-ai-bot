@@ -12,6 +12,7 @@ import { initImages } from './images.js';
 import { initDocuments } from './documents.js';
 import { renderMarkup } from '../components/markup.js';
 import { initStats } from './stats.js';
+import { initMcpServers } from './mcpServers.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Admin page loaded, initializing...');
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const documentsBtn = document.getElementById('btn-documents');
     const conversationsBtn = document.getElementById('btn-conversations');
    const statsBtn = document.getElementById('btn-stats');
+   const mcpBtn = document.getElementById('btn-mcp');
 
    // Mobile buttons
    const mobileEditorBtn = document.getElementById('mobile-btn-editor');
@@ -78,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mobileDocumentsBtn = document.getElementById('mobile-btn-documents');
     const mobileConversationsBtn = document.getElementById('mobile-btn-conversations');
    const mobileStatsBtn = document.getElementById('mobile-btn-stats');
+   const mobileMcpBtn = document.getElementById('mobile-btn-mcp');
 
   const editorView = document.getElementById('editor-view');
   const questionsView = document.getElementById('questions-view');
@@ -89,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
    const conversationsView = document.getElementById('conversations-view');
    const statsView = document.getElementById('stats-view');
    const backupView = document.getElementById('backup-view');
+   const mcpView = document.getElementById('mcp-view');
 
   const openCountSpan = document.getElementById('open-count');
 
@@ -279,21 +283,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateButtonStyles(statsBtn);
   }
 
-    function showBackup() {
-      statsView.classList.add('hidden');
-      backupView.classList.remove('hidden');
-      editorView.classList.add('hidden');
-      questionsView.classList.add('hidden');
-      archiveView.classList.add('hidden');
-      userView.classList.add('hidden');
-      feedbackView.classList.add('hidden');
-      imagesView.classList.add('hidden');
-      documentsView.classList.add('hidden');
-      if (conversationsView) conversationsView.classList.add('hidden');
-      document.getElementById('backup-create')?.classList.add('hidden');
-      document.getElementById('backup-import')?.classList.add('hidden');
-      updateButtonStyles(backupBtn);
-    }
+     function showBackup() {
+       backupView.classList.remove('hidden');
+       editorView.classList.add('hidden');
+       questionsView.classList.add('hidden');
+       archiveView.classList.add('hidden');
+       userView.classList.add('hidden');
+       feedbackView.classList.add('hidden');
+       imagesView.classList.add('hidden');
+       documentsView.classList.add('hidden');
+       if (conversationsView) conversationsView.classList.add('hidden');
+       statsView.classList.add('hidden');
+       mcpView.classList.add('hidden');
+       document.getElementById('backup-create')?.classList.add('hidden');
+       updateButtonStyles(backupBtn);
+       initBackup();
+     }
+
+     function showMcp() {
+       mcpView.classList.remove('hidden');
+       editorView.classList.add('hidden');
+       questionsView.classList.add('hidden');
+       archiveView.classList.add('hidden');
+       userView.classList.add('hidden');
+       feedbackView.classList.add('hidden');
+       imagesView.classList.add('hidden');
+       documentsView.classList.add('hidden');
+       if (conversationsView) conversationsView.classList.add('hidden');
+       statsView.classList.add('hidden');
+       backupView.classList.add('hidden');
+       document.getElementById('backup-create')?.classList.add('hidden');
+       updateButtonStyles(mcpBtn);
+       initMcpServers();
+     }
 
     function updateButtonStyles(activeButton) {
       const buttons = [editorBtn, questionsBtn, archiveBtn, userBtn, feedbackBtn, exportBtn, backupBtn, imagesBtn, documentsBtn, conversationsBtn, statsBtn];
@@ -353,9 +375,10 @@ document.addEventListener('DOMContentLoaded', async () => {
        editorBtn.classList.remove('hidden');
        questionsBtn.classList.remove('hidden');
        archiveBtn.classList.remove('hidden');
-        userBtn.classList.remove('hidden');
-        feedbackBtn.classList.remove('hidden');
-        backupBtn.classList.remove('hidden');
+         userBtn.classList.remove('hidden');
+         feedbackBtn.classList.remove('hidden');
+         backupBtn.classList.remove('hidden');
+         mcpBtn.classList.remove('hidden');
         if(imagesBtn) imagesBtn.classList.remove('hidden');
         if(documentsBtn) documentsBtn.classList.remove('hidden');
         if(conversationsBtn) conversationsBtn.classList.remove('hidden');
@@ -364,9 +387,10 @@ document.addEventListener('DOMContentLoaded', async () => {
        if(mobileEditorBtn) mobileEditorBtn.classList.remove('hidden');
        if(mobileQuestionsBtn) mobileQuestionsBtn.classList.remove('hidden');
        if(mobileArchiveBtn) mobileArchiveBtn.classList.remove('hidden');
-        if(mobileUserBtn) mobileUserBtn.classList.remove('hidden');
-        if(mobileFeedbackBtn) mobileFeedbackBtn.classList.remove('hidden');
-        if(mobileBackupBtn) mobileBackupBtn.classList.remove('hidden');
+         if(mobileUserBtn) mobileUserBtn.classList.remove('hidden');
+         if(mobileFeedbackBtn) mobileFeedbackBtn.classList.remove('hidden');
+         if(mobileBackupBtn) mobileBackupBtn.classList.remove('hidden');
+         if(mobileMcpBtn) mobileMcpBtn.classList.remove('hidden');
         if(mobileImagesBtn) mobileImagesBtn.classList.remove('hidden');
         if(mobileDocumentsBtn) mobileDocumentsBtn.classList.remove('hidden');
         if(mobileConversationsBtn) mobileConversationsBtn.classList.remove('hidden');
@@ -374,9 +398,10 @@ document.addEventListener('DOMContentLoaded', async () => {
        editorBtn.addEventListener('click', showEditor);
        questionsBtn.addEventListener('click', showQuestions);
        archiveBtn.addEventListener('click', showArchive);
-          userBtn.addEventListener('click', showUserAdmin);
-          feedbackBtn.addEventListener('click', showFeedback);
-          backupBtn.addEventListener('click', showBackup);
+           userBtn.addEventListener('click', showUserAdmin);
+           feedbackBtn.addEventListener('click', showFeedback);
+           backupBtn.addEventListener('click', showBackup);
+           mcpBtn.addEventListener('click', showMcp);
          if(imagesBtn) imagesBtn.addEventListener('click', showImages);
          if(documentsBtn) documentsBtn.addEventListener('click', showDocuments);
 
@@ -384,9 +409,10 @@ document.addEventListener('DOMContentLoaded', async () => {
        if(mobileEditorBtn) mobileEditorBtn.addEventListener('click', () => { showEditor(); mobileMenu.classList.add('hidden'); });
        if(mobileQuestionsBtn) mobileQuestionsBtn.addEventListener('click', () => { showQuestions(); mobileMenu.classList.add('hidden'); });
        if(mobileArchiveBtn) mobileArchiveBtn.addEventListener('click', () => { showArchive(); mobileMenu.classList.add('hidden'); });
-        if(mobileUserBtn) mobileUserBtn.addEventListener('click', () => { showUserAdmin(); mobileMenu.classList.add('hidden'); });
-          if(mobileFeedbackBtn) mobileFeedbackBtn.addEventListener('click', () => { showFeedback(); mobileMenu.classList.add('hidden'); });
-          if(mobileBackupBtn) mobileBackupBtn.addEventListener('click', () => { showBackup(); mobileMenu.classList.add('hidden'); });
+         if(mobileUserBtn) mobileUserBtn.addEventListener('click', () => { showUserAdmin(); mobileMenu.classList.add('hidden'); });
+           if(mobileFeedbackBtn) mobileFeedbackBtn.addEventListener('click', () => { showFeedback(); mobileMenu.classList.add('hidden'); });
+           if(mobileBackupBtn) mobileBackupBtn.addEventListener('click', () => { showBackup(); mobileMenu.classList.add('hidden'); });
+           if(mobileMcpBtn) mobileMcpBtn.addEventListener('click', () => { showMcp(); mobileMenu.classList.add('hidden'); });
          if(mobileImagesBtn) mobileImagesBtn.addEventListener('click', () => { showImages(); mobileMenu.classList.add('hidden'); });
          if(mobileDocumentsBtn) mobileDocumentsBtn.addEventListener('click', () => { showDocuments(); mobileMenu.classList.add('hidden'); });
 

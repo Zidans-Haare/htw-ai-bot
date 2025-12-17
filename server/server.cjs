@@ -714,19 +714,23 @@ const serverCallback = async () => {
   console.log(`Server is running with ${useHttps ? 'HTTPS' : 'HTTP'} on port ${port}`);
 };
 
-if (!cliMode && !isTest && process.env.NODE_ENV !== 'test') {
-  if (useHttps) {
-    try {
-      const httpsOptions = {
-        key: fs.readFileSync(path.join(os.homedir(), '.ssh', 'key.pem')),
-        cert: fs.readFileSync(path.join(os.homedir(), '.ssh', 'cert.pem'))
-      };
-      https.createServer(httpsOptions, app).listen(port, serverCallback);
-    } catch (e) {
-      console.error("Could not start HTTPS server. Do you have key.pem and cert.pem in your .ssh directory?", e);
-      process.exit(1);
+const startServer = () => {
+  if (!cliMode && !isTest && process.env.NODE_ENV !== 'test') {
+    if (useHttps) {
+      try {
+        const httpsOptions = {
+          key: fs.readFileSync(path.join(os.homedir(), '.ssh', 'key.pem')),
+          cert: fs.readFileSync(path.join(os.homedir(), '.ssh', 'cert.pem'))
+        };
+        https.createServer(httpsOptions, app).listen(port, serverCallback);
+      } catch (e) {
+        console.error("Could not start HTTPS server. Do you have key.pem and cert.pem in your .ssh directory?", e);
+        process.exit(1);
+      }
+    } else {
+      app.listen(port, serverCallback);
     }
-  } else {
-    app.listen(port, serverCallback);
   }
-}
+};
+
+startServer();
