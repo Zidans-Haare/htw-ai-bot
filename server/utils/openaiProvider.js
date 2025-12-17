@@ -1,4 +1,20 @@
-const OpenAI = require('openai');
+const path = require('path');
+const { execSync } = require('child_process');
+
+let OpenAI;
+try {
+  OpenAI = require('openai');
+} catch (error) {
+  if (error.code === 'MODULE_NOT_FOUND') {
+    console.log('OpenAI module not found. Installing automatically...');
+    const projectRoot = path.resolve(__dirname, '../../..');
+    execSync('npm install openai', { stdio: 'inherit', cwd: projectRoot });
+    OpenAI = require('openai');
+    console.log('OpenAI module installed and loaded successfully.');
+  } else {
+    throw error;
+  }
+}
 
 let sharedClient = null;
 
@@ -8,7 +24,7 @@ function getClient(explicitKey = null, backend = false) {
   if (!apiKey) {
     throw new Error(`${prefix}AI_OPENAI_API_KEY or ${prefix}AI_API_KEY environment variable not set.`);
   }
-  const baseURL = process.env[prefix + 'AI_OPENAI_BASE_URL'] || 'https://api.openai.com/v1';
+  const baseURL = process.env[prefix + 'AI_OPENAI_BASE_URL'] || process.env[prefix + 'AI_BASE_URL'] || 'https://api.openai.com/v1';
 
   if (explicitKey) {
     return new OpenAI({ apiKey, baseURL });
