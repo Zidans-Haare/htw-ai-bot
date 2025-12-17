@@ -192,7 +192,6 @@ const apiLimiter = rateLimit({
     message: { error: 'Too many requests, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: parseInt(process.env.TRUST_PROXY_COUNT) || 2,
     skip: (req) => req.path === '/validate' || req.path === '/admin/validate',
 });
 
@@ -201,7 +200,6 @@ const dashboardLimiter = rateLimit({
     max: 500, // Higher limit for dashboard API calls
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: parseInt(process.env.TRUST_PROXY_COUNT) || 2,
 });
 
 const loginLimiter = rateLimit({
@@ -210,7 +208,6 @@ const loginLimiter = rateLimit({
     message: { error: "Too many login attempts from this IP, please try again after an hour" },
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: parseInt(process.env.TRUST_PROXY_COUNT) || 2,
     skipSuccessfulRequests: true, // Only count failed login attempts
 });
 
