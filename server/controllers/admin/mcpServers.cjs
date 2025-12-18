@@ -15,7 +15,7 @@ module.exports = (adminAuth) => {
  * @returns {object} Validated data or throws error.
  */
 function validateMcpServer(data) {
-  const { name, type, command, url, headers, env, enabled, timeout } = data;
+  const { name, type, command, url, headers, env, enabled, timeout, testQuery } = data;
   if (!name || typeof name !== 'string') throw new Error('Invalid name');
   if (!['local', 'remote'].includes(type)) throw new Error('Invalid type');
   if (type === 'local' && (!Array.isArray(command) || command.some(c => typeof c !== 'string'))) {
@@ -26,7 +26,8 @@ function validateMcpServer(data) {
   if (env && typeof env !== 'object') throw new Error('Invalid env');
   if (typeof enabled !== 'boolean') throw new Error('Invalid enabled');
   if (timeout && (typeof timeout !== 'number' || timeout < 1000)) throw new Error('Invalid timeout');
-  return { name, type, command, url, headers, env, enabled, timeout };
+  if (testQuery && typeof testQuery !== 'string') throw new Error('Invalid testQuery');
+  return { name, type, command, url, headers, env, enabled, timeout, testQuery };
 }
 
 /**
@@ -191,6 +192,7 @@ router.post('/:id/test', adminAuth, async (req, res) => {
 
     let fullResponseText = '';
     let toolsUsed = [];
+    let hasErrors = false;
     const maxIterations = 3; // Limit iterations for testing
 
     for (let i = 0; i < maxIterations; i++) {
@@ -204,16 +206,37 @@ router.post('/:id/test', adminAuth, async (req, res) => {
         messages.push({ role: 'assistant', content: response.content, tool_calls: response.tool_calls });
 
         for (const toolCall of response.tool_calls) {
+          const toolName = toolCall.function.name.replace(`${server.name}_`, '');
+          let toolStatus = 'passed';
+          let toolError = null;
+
           try {
             console.log(`Executing tool: ${toolCall.function.name}`);
             const result = await executeMcpTool(toolCall, serverMcpTools);
             console.log(`Tool result (${toolCall.function.name}):`, result.content.substring(0, 200) + (result.content.length > 200 ? '...' : ''));
-            toolsUsed.push(toolCall.function.name.replace(`${server.name}_`, ''));
+
+            // Check if tool result indicates an error
+            const resultObj = JSON.parse(result.content);
+            if (resultObj.isError) {
+              hasErrors = true;
+              toolStatus = 'error';
+              toolError = resultObj.text || 'Tool reported error';
+            }
+
             messages.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
           } catch (error) {
             console.error('Tool execution error:', error);
+            hasErrors = true;
+            toolStatus = 'error';
+            toolError = error.message;
             messages.push({ role: 'tool', tool_call_id: toolCall.id, content: `Error: ${error.message}` });
           }
+
+          toolsUsed.push({
+            name: toolName,
+            status: toolStatus,
+            error: toolError
+          });
         }
 
         // After the last iteration, give AI one more chance to respond without tools
@@ -239,6 +262,7 @@ router.post('/:id/test', adminAuth, async (req, res) => {
       response: fullResponseText,
       toolsUsed: toolsUsed.length > 0 ? toolsUsed : null,
       serverName: server.name,
+      hasErrors: hasErrors,
     });
 
   } catch (error) {

@@ -195,9 +195,11 @@ function showForm(server = null) {
     document.getElementById('mcp-env').value = JSON.stringify(server.env || {}, null, 2);
     document.getElementById('mcp-enabled').checked = server.enabled;
     document.getElementById('mcp-timeout').value = server.timeout || 10000;
+    document.getElementById('mcp-test-query').value = server.testQuery || 'What tools do you have available?';
   } else {
     form.reset();
     document.getElementById('mcp-type').dispatchEvent(new Event('change'));
+    document.getElementById('mcp-test-query').value = 'What tools do you have available?';
   }
 }
 
@@ -233,6 +235,7 @@ async function saveServer() {
     type: document.getElementById('mcp-type').value,
     enabled: document.getElementById('mcp-enabled').checked,
     timeout: parseInt(document.getElementById('mcp-timeout').value),
+    testQuery: document.getElementById('mcp-test-query').value,
   };
   if (data.type === 'local') {
     try {
@@ -314,7 +317,16 @@ async function testServer() {
     const result = await response.json();
 
     if (response.ok) {
-      alert(`Test successful!\n\nResponse: ${result.response}\n\nTools used: ${result.toolsUsed?.join(', ') || 'None'}`);
+      const status = result.hasErrors ? 'COMPLETED WITH ERRORS' : 'SUCCESSFUL';
+
+      let toolsText = 'None';
+      if (result.toolsUsed && result.toolsUsed.length > 0) {
+        toolsText = result.toolsUsed.map(tool =>
+          tool.error ? `${tool.name} (error)` : `${tool.name} (passed)`
+        ).join(', ');
+      }
+
+      alert(`Test ${status}!\n\nResponse: ${result.response}\n\nTools used: ${toolsText}`);
     } else {
       alert(`Test failed: ${result.error}`);
     }

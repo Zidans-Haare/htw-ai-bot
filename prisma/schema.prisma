@@ -256,6 +256,7 @@ model McpServer {
   env       Json?    // Environment variables
   enabled   Boolean  @default(true)
   timeout   Int?     @default(10000)
+  testQuery String?  // Default test query for this server
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("mcp_servers")
