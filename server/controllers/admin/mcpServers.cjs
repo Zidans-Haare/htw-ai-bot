@@ -149,5 +149,103 @@ router.delete('/:id', adminAuth, async (req, res) => {
   }
 });
 
+// POST /:id/test - Test server with AI chat simulation
+router.post('/:id/test', adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { query } = req.body;
+
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query is required' });
+    }
+
+    const server = await prisma.mcpServer.findUnique({ where: { id } });
+    if (!server) {
+      return res.status(404).json({ error: 'Server not found' });
+    }
+
+    if (!server.enabled) {
+      return res.status(400).json({ error: 'Server is not enabled' });
+    }
+
+    // Get MCP tools for this server only
+    const { getMcpTools, executeMcpTool } = require('../../utils/mcpTools');
+    const allMcpTools = await getMcpTools();
+
+    // Filter tools to only this server
+    const serverMcpTools = allMcpTools.filter(tool => tool.serverId === id);
+    const tools = serverMcpTools.map(t => t.tool);
+
+    if (tools.length === 0) {
+      return res.status(400).json({ error: 'No tools available from this server' });
+    }
+
+    console.log(`Testing MCP server ${server.name} with ${tools.length} tools`);
+
+    // Simulate AI chat with tool calling
+    const { chatCompletion } = require('../../utils/aiProvider');
+    const messages = [
+      { role: 'system', content: 'You are a helpful assistant. Use available tools when needed.' },
+      { role: 'user', content: query },
+    ];
+
+    let fullResponseText = '';
+    let toolsUsed = [];
+    const maxIterations = 3; // Limit iterations for testing
+
+    for (let i = 0; i < maxIterations; i++) {
+      const response = await chatCompletion(messages, {
+        temperature: 0.2,
+        tools: tools.length > 0 ? tools : undefined,
+      });
+
+      if (response.tool_calls && response.tool_calls.length > 0) {
+        // Execute tools
+        messages.push({ role: 'assistant', content: response.content, tool_calls: response.tool_calls });
+
+        for (const toolCall of response.tool_calls) {
+          try {
+            console.log(`Executing tool: ${toolCall.function.name}`);
+            const result = await executeMcpTool(toolCall, serverMcpTools);
+            console.log(`Tool result (${toolCall.function.name}):`, result.content.substring(0, 200) + (result.content.length > 200 ? '...' : ''));
+            toolsUsed.push(toolCall.function.name.replace(`${server.name}_`, ''));
+            messages.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
+          } catch (error) {
+            console.error('Tool execution error:', error);
+            messages.push({ role: 'tool', tool_call_id: toolCall.id, content: `Error: ${error.message}` });
+          }
+        }
+
+        // After the last iteration, give AI one more chance to respond without tools
+        if (i === maxIterations - 1) {
+          const finalResponse = await chatCompletion(messages, {
+            temperature: 0.2,
+            tools: [], // No tools for final response
+          });
+          fullResponseText = finalResponse.content || 'AI completed tool calls but generated no final response.';
+          break;
+        }
+      } else {
+        fullResponseText = response.content || 'No response generated.';
+        break;
+      }
+    }
+
+    if (!fullResponseText) {
+      fullResponseText = 'Tool calls completed but no final response generated.';
+    }
+
+    res.json({
+      response: fullResponseText,
+      toolsUsed: toolsUsed.length > 0 ? toolsUsed : null,
+      serverName: server.name,
+    });
+
+  } catch (error) {
+    console.error('Error testing MCP server:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
   return router;
 };

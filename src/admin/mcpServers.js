@@ -74,7 +74,12 @@ formContainer.innerHTML = `
       <label class="block text-sm font-medium">Timeout (ms)</label>
       <input type="number" id="mcp-timeout" class="w-full p-2 border border-(--input-border) rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-(--accent-color)" value="10000" min="1000">
     </div>
+    <div>
+      <label class="block text-sm font-medium">Test Query</label>
+      <textarea id="mcp-test-query" class="w-full p-2 border border-(--input-border) rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-(--accent-color)" rows="3" placeholder="Enter a test query to simulate how the AI would use this MCP server"></textarea>
+    </div>
     <div class="flex justify-end space-x-2">
+      <button type="button" id="mcp-test" class="px-4 py-2 btn-secondary rounded-md">Test</button>
       <button type="button" id="mcp-cancel" class="px-4 py-2 btn-secondary rounded-md">Cancel</button>
       <button type="submit" class="px-4 py-2 btn-primary rounded-md">Save</button>
     </div>
@@ -100,6 +105,11 @@ function initMcpServers() {
     const isLocal = e.target.value === 'local';
     document.getElementById('local-fields').classList.toggle('hidden', !isLocal);
     document.getElementById('remote-fields').classList.toggle('hidden', isLocal);
+  });
+
+  // Test button
+  document.getElementById('mcp-test').addEventListener('click', async () => {
+    await testServer();
   });
 
   // Form submit
@@ -272,6 +282,48 @@ async function updateServer(id, updates) {
     loadServers();
   } catch (error) {
     console.error('Failed to update server:', error);
+  }
+}
+
+async function testServer() {
+  const testQuery = document.getElementById('mcp-test-query').value.trim();
+  if (!testQuery) {
+    alert('Please enter a test query');
+    return;
+  }
+
+  const form = document.getElementById('mcp-server-form');
+  const id = form.dataset.id;
+  if (!id) {
+    alert('Please save the server first before testing');
+    return;
+  }
+
+  const testBtn = document.getElementById('mcp-test');
+  const originalText = testBtn.textContent;
+  testBtn.textContent = 'Testing...';
+  testBtn.disabled = true;
+
+  try {
+    const response = await fetch(`/api/admin/mcp-servers/${id}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: testQuery }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert(`Test successful!\n\nResponse: ${result.response}\n\nTools used: ${result.toolsUsed?.join(', ') || 'None'}`);
+    } else {
+      alert(`Test failed: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Test error:', error);
+    alert('Test failed: Network error');
+  } finally {
+    testBtn.textContent = originalText;
+    testBtn.disabled = false;
   }
 }
 

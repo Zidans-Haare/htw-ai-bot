@@ -428,7 +428,9 @@ async function streamChat(req, res) {
         finalMessages.push({ role: 'assistant', content: response.content, tool_calls: response.tool_calls });
         for (const toolCall of response.tool_calls) {
           try {
+            console.log(`Executing tool: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
             const result = await executeMcpTool(toolCall, mcpTools);
+            console.log(`Tool result: ${result.content.substring(0, 200)}...`);
             finalMessages.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
           } catch (error) {
             console.error('Tool execution error:', error);
