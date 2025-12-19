@@ -92,4 +92,5 @@ async function* chatCompletionStream(messages, options = {}) {
 module.exports = {
   chatCompletion,
   chatCompletionStream,
+  getClient,
 };

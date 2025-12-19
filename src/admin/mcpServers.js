@@ -319,6 +319,11 @@ async function testServer() {
     if (response.ok) {
       const status = result.hasErrors ? 'COMPLETED WITH ERRORS' : 'SUCCESSFUL';
 
+      let availableToolsText = 'None';
+      if (result.availableTools && result.availableTools.length > 0) {
+        availableToolsText = result.availableTools.join(', ');
+      }
+
       let toolsText = 'None';
       if (result.toolsUsed && result.toolsUsed.length > 0) {
         toolsText = result.toolsUsed.map(tool =>
@@ -326,7 +331,7 @@ async function testServer() {
         ).join(', ');
       }
 
-      alert(`Test ${status}!\n\nResponse: ${result.response}\n\nTools used: ${toolsText}`);
+      alert(`Test ${status}! Your AI model supports tool calls.\n\nResponse: ${result.response}\n\nAvailable tools for ${result.serverName}: ${availableToolsText}\n\nTools used: ${toolsText}`);
     } else {
       alert(`Test failed: ${result.error}`);
     }

@@ -169,6 +169,15 @@ router.post('/:id/test', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'Server is not enabled' });
     }
 
+    // Check if the AI provider supports tool calls
+    const { supportsToolCalls } = require('../../utils/aiProvider');
+    const toolCallsSupported = await supportsToolCalls();
+    if (!toolCallsSupported) {
+      return res.status(400).json({
+        error: 'Current AI model does not support tool calls. MCP server testing requires a model that supports function calling (e.g., GPT-4, Claude-3, Gemini-1.5).'
+      });
+    }
+
     // Get MCP tools for this server only
     const { getMcpTools, executeMcpTool } = require('../../utils/mcpTools');
     const allMcpTools = await getMcpTools();
@@ -177,18 +186,27 @@ router.post('/:id/test', adminAuth, async (req, res) => {
     const serverMcpTools = allMcpTools.filter(tool => tool.serverId === id);
     const tools = serverMcpTools.map(t => t.tool);
 
+    console.log(`Available tools for ${server.name}:`, tools.map(t => t.function.name));
+    console.log(`Raw server tools from DB:`, serverMcpTools.map(t => ({ name: t.tool.function.name, serverName: t.server.name })));
+
     if (tools.length === 0) {
       return res.status(400).json({ error: 'No tools available from this server' });
     }
 
     console.log(`Testing MCP server ${server.name} with ${tools.length} tools`);
 
+    // Extract available tool names for response
+    const availableTools = tools.map(t => t.function.name.replace(`${server.name}_`, ''));
+
     // Simulate AI chat with tool calling
     const { chatCompletion } = require('../../utils/aiProvider');
     const messages = [
-      { role: 'system', content: 'You are a helpful assistant. Use available tools when needed.' },
+      { role: 'system', content: 'You are a helpful assistant with access to various tools. When users ask for information that requires external data or specific functionality, you MUST use the available tools to get accurate, up-to-date information. Do not give generic responses or suggest manual alternatives - use the tools provided.' },
       { role: 'user', content: query },
     ];
+
+    console.log(`Sending to AI - Messages:`, messages);
+    console.log(`Sending to AI - Tools:`, JSON.stringify(tools, null, 2));
 
     let fullResponseText = '';
     let toolsUsed = [];
@@ -196,9 +214,16 @@ router.post('/:id/test', adminAuth, async (req, res) => {
     const maxIterations = 3; // Limit iterations for testing
 
     for (let i = 0; i < maxIterations; i++) {
+      console.log(`AI chat iteration ${i + 1}/${maxIterations}`);
       const response = await chatCompletion(messages, {
         temperature: 0.2,
         tools: tools.length > 0 ? tools : undefined,
+      });
+
+      console.log(`AI response:`, {
+        content: response.content,
+        tool_calls_count: response.tool_calls ? response.tool_calls.length : 0,
+        finish_reason: response.finish_reason
       });
 
       if (response.tool_calls && response.tool_calls.length > 0) {
@@ -261,6 +286,7 @@ router.post('/:id/test', adminAuth, async (req, res) => {
     res.json({
       response: fullResponseText,
       toolsUsed: toolsUsed.length > 0 ? toolsUsed : null,
+      availableTools: availableTools,
       serverName: server.name,
       hasErrors: hasErrors,
     });

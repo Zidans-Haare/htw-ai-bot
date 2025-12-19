@@ -403,6 +403,14 @@ async function streamChat(req, res) {
     const tools = mcpTools.map(t => t.tool);
     console.log(`Loaded ${tools.length} MCP tools: ${tools.map(t => t.function.name).join(', ')}`);
 
+    // Check if AI provider supports tool calls
+    const { supportsToolCalls } = require('../utils/aiProvider');
+    const toolCallsSupported = await supportsToolCalls();
+    if (tools.length > 0 && !toolCallsSupported) {
+      console.log('AI model does not support tool calls, skipping MCP tools');
+      tools.length = 0; // Clear tools array
+    }
+
     let fullResponseText = '';
     let finalMessages = messagesPayload;
 

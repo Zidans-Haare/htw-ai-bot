@@ -187,6 +187,14 @@ async function executeMcpTool(toolCall, tools) {
   const { server } = tool;
   const args = JSON.parse(toolCall.function.arguments);
 
+  // Debug: show what name will be sent to the MCP server
+  const serverNameNormalized = server.name.replace(/\s+/g, '_');
+  console.log(`Server name: "${server.name}" -> normalized: "${serverNameNormalized}"`);
+  console.log(`Tool name to clean: "${toolCall.function.name}"`);
+  const cleanToolName = toolCall.function.name.replace(`${serverNameNormalized}_`, '');
+  console.log(`After replacement: "${cleanToolName}"`);
+  console.log(`Sending tool call to ${server.name} MCP server: "${cleanToolName}" (original: "${toolName}")`);
+
   let response;
   if (server.type === 'remote') {
     response = await fetch(server.url, {
@@ -201,7 +209,7 @@ async function executeMcpTool(toolCall, tools) {
         id: 3,
         method: 'tools/call',
         params: {
-          name: toolCall.function.name.replace(`${server.name}_`, ''), // Remove prefix
+          name: cleanToolName,
           arguments: args,
         },
       }),
@@ -217,7 +225,7 @@ async function executeMcpTool(toolCall, tools) {
       jsonrpc: '2.0',
       method: 'tools/call',
       params: {
-        name: toolCall.function.name.replace(`${server.name}_`, ''), // Remove prefix
+        name: cleanToolName,
         arguments: args,
       },
     });
