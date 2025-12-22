@@ -105,7 +105,38 @@ export async function sendMsg(app, promptText) {
         if (isNewChat) {
             app.conversationId = currentConversationId;
         }
-        displayAiMessage();
+
+        // Show tool usage feedback if tools were called
+        if (data.toolStatuses && data.toolStatuses.length > 0) {
+            const typingEl = document.getElementById('typing');
+            const originalContent = typingEl.innerHTML;
+
+            // Show each tool status message briefly
+            let statusIndex = 0;
+            const showNextStatus = () => {
+                if (statusIndex < data.toolStatuses.length) {
+                    const toolMessage = data.toolStatuses[statusIndex];
+                    typingEl.innerHTML = `<i class="fas fa-tools"></i> ${toolMessage}`;
+                    statusIndex++;
+
+                    // Show next status after 1.5 seconds, or proceed to AI message
+                    setTimeout(() => {
+                        if (statusIndex < data.toolStatuses.length) {
+                            showNextStatus();
+                        } else {
+                            // All tool statuses shown, now display AI message
+                            typingEl.innerHTML = originalContent;
+                            displayAiMessage();
+                        }
+                    }, 1500);
+                }
+            };
+
+            showNextStatus();
+        } else {
+            // No tool statuses, display AI message immediately
+            displayAiMessage();
+        }
     } catch (e) {
         console.error(e);
         const errorMessage = e?.message || 'Fehler bei der Verbindung zum Server.';

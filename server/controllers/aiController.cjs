@@ -412,23 +412,37 @@ async function streamChat(req, res) {
     }
 
     let fullResponseText = '';
+    let lastAiContent = ''; // Store the last meaningful AI response
     let finalMessages = messagesPayload;
 
     // Tool calling loop
     const toolStatuses = [];
-    for (let i = 0; i < 5; i++) { // Max 5 iterations
+    for (let i = 0; i < 5; i++) {
+      console.log(`Tool calling loop iteration ${i + 1}, messages count: ${finalMessages.length}`);
+
       const response = await chatCompletion(finalMessages, {
         apiKey: userApiKey,
         temperature: 0.2,
         tools: tools.length > 0 ? tools : undefined,
       });
 
+      console.log(`AI response - content length: ${response.content?.length || 0}, tool calls: ${response.tool_calls?.length || 0}, finish_reason: ${response.finish_reason}`);
+
+      // Store any content from AI as potential response
+      if (response.content && response.content.trim()) {
+        lastAiContent = response.content;
+        console.log(`Stored AI content as potential response: ${lastAiContent.substring(0, 50)}...`);
+      }
+
       if (response.tool_calls && response.tool_calls.length > 0) {
+        console.log(`AI made ${response.tool_calls.length} tool calls`);
+
         // Collect tool status for frontend
         for (const toolCall of response.tool_calls) {
           const tool = mcpTools.find(t => t.tool.function.name === toolCall.function.name);
           if (tool) {
             toolStatuses.push(`Using Tool: ${tool.tool.function.name}...`);
+            console.log(`Added tool status: Using Tool: ${tool.tool.function.name}...`);
           }
         }
 
@@ -438,13 +452,14 @@ async function streamChat(req, res) {
           try {
             console.log(`Executing tool: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
             const result = await executeMcpTool(toolCall, mcpTools);
-            console.log(`Tool result: ${result.content.substring(0, 200)}...`);
+            console.log(`Tool result length: ${result.content.length}`);
             finalMessages.push({
               role: 'tool',
               tool_call_id: toolCall.id,
               function_name: toolCall.function.name, // For Google provider compatibility
               content: result.content
             });
+            console.log(`Added tool result to messages, new count: ${finalMessages.length}`);
           } catch (error) {
             console.error('Tool execution error:', error);
             finalMessages.push({
@@ -457,12 +472,16 @@ async function streamChat(req, res) {
         }
       } else {
         fullResponseText = response.content || '';
+        console.log(`No more tool calls, final response: ${fullResponseText.substring(0, 100)}...`);
         break;
       }
     }
 
-    // Set final response
-    if (!fullResponseText) {
+    // Set final response - use last AI content if no final response was generated
+    if (!fullResponseText && lastAiContent) {
+      console.log(`Using last AI content as final response since no proper final response was generated`);
+      fullResponseText = lastAiContent;
+    } else if (!fullResponseText) {
       fullResponseText = 'No response generated.';
     }
 
