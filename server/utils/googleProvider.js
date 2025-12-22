@@ -1,3 +1,5 @@
+const { convertToolsToProvider, convertToolCallsFromProvider } = require('./toolConverter');
+
 let GoogleGenerativeAI = null;
 
 async function loadGoogleSDK() {
@@ -34,13 +36,36 @@ async function chatCompletion(messages, options = {}) {
   const prefix = options.backend ? 'BACKEND_' : '';
   const client = await getClient(options.apiKey, options.backend);
   const modelName = options.model || process.env[prefix + 'AI_GOOGLE_MODEL'] || process.env[prefix + 'AI_MODEL'] || 'gemini-2.5-flash';
-  const model = client.getGenerativeModel({ model: modelName });
+
+  // Convert OpenAI tool format to Google function calling format using abstraction layer
+  const tools = convertToolsToProvider(options.tools, 'google');
+
+  const model = client.getGenerativeModel({
+    model: modelName,
+    tools: tools
+  });
 
   // Convert messages to Gemini format
-  const contents = messages.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: msg.content }],
-  }));
+  const contents = messages.map(msg => {
+    if (msg.role === 'tool') {
+      // Handle tool result messages for Google function calling
+      const functionName = msg.function_name || msg.tool_call_id; // Prefer function_name for Google compatibility
+      return {
+        role: 'user',
+        parts: [{
+          functionResponse: {
+            name: functionName,
+            response: JSON.parse(msg.content)
+          }
+        }]
+      };
+    } else {
+      return {
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      };
+    }
+  });
 
   const config = {
     temperature: options.temperature || parseFloat(process.env[prefix + 'AI_TEMPERATURE']),
@@ -53,7 +78,25 @@ async function chatCompletion(messages, options = {}) {
   });
 
   const response = result.response;
-  return { content: response.text() };
+
+  // Check if response contains function calls
+  const functionCalls = response.functionCalls();
+  if (functionCalls && functionCalls.length > 0) {
+    // Convert Google function calls to OpenAI tool_calls format using abstraction layer
+    const tool_calls = convertToolCallsFromProvider(functionCalls, 'google');
+
+    return {
+      content: response.text() || '',
+      tool_calls: tool_calls,
+      finish_reason: 'tool_calls'
+    };
+  }
+
+  return {
+    content: response.text() || '',
+    tool_calls: [],
+    finish_reason: 'stop'
+  };
 }
 
 async function* chatCompletionStream(messages, options = {}) {

@@ -1,5 +1,6 @@
 const path = require('path');
 const { execSync } = require('child_process');
+const { convertToolsToProvider, convertToolCallsFromProvider } = require('./toolConverter');
 
 let OpenAI;
 try {
@@ -52,7 +53,7 @@ async function chatCompletion(messages, options = {}) {
   };
 
   if (options.tools && options.tools.length > 0) {
-    request.tools = options.tools;
+    request.tools = convertToolsToProvider(options.tools, 'openai'); // Uses abstraction layer
     request.tool_choice = options.tool_choice || 'auto';
   }
 

@@ -439,10 +439,20 @@ async function streamChat(req, res) {
             console.log(`Executing tool: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
             const result = await executeMcpTool(toolCall, mcpTools);
             console.log(`Tool result: ${result.content.substring(0, 200)}...`);
-            finalMessages.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
+            finalMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              function_name: toolCall.function.name, // For Google provider compatibility
+              content: result.content
+            });
           } catch (error) {
             console.error('Tool execution error:', error);
-            finalMessages.push({ role: 'tool', tool_call_id: toolCall.id, content: `Error: ${error.message}` });
+            finalMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              function_name: toolCall.function.name, // For Google provider compatibility
+              content: `Error: ${error.message}`
+            });
           }
         }
       } else {
