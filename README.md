@@ -4,7 +4,7 @@ Dieses Projekt ist eine Node.js-Anwendung, die einen KI-gestützten Chat-Assiste
 
 ## ✨ Features
 
-- **KI-Chat:** Eine öffentliche Schnittstelle (`/api/chat`), die Anfragen über verschiedene KI-Provider (ChatAI, Google Gemini, Claude, XAI) beantwortet.
+- **KI-Chat:** Eine öffentliche Schnittstelle (`/api/chat`), die Anfragen über verschiedene KI-Provider (OpenAI + kompatible APIs wie universitäre ChatAI, Google Gemini, Claude, XAI) beantwortet.
 - **Admin-Panel:** Eine passwortgeschützte Weboberfläche zur Verwaltung von Hochschul-ABC-Einträgen, Benutzern, Bildern, Dokumenten und zur Überprüfung von Feedback.
 - **Dashboard:** Ein separates, geschütztes Dashboard zur Anzeige von Nutzungsstatistiken und Anwendungsdaten.
 - **Vektor-Datenbank:** Optionale Unterstützung für ChromaDB oder Weaviate zur semantischen Suche in Dokumenten und Bildern.
@@ -19,7 +19,7 @@ Dieses Projekt ist eine Node.js-Anwendung, die einen KI-gestützten Chat-Assiste
 - **Vektor-DB:** Optional ChromaDB oder Weaviate für semantische Suche
 - **Embeddings:** Xenova Transformers oder Hugging Face für Text-Einbettungen
 - **Frontend:** Statisches HTML, CSS und JavaScript (gebaut mit Vite)
-- **KI:** Mehrere Provider (ChatAI, Google Gemini, Anthropic Claude, XAI)
+- **KI:** Mehrere Provider (OpenAI + kompatible APIs wie universitäre ChatAI, Google Gemini, Anthropic Claude, XAI)
 
 ## 🚀 Setup & Konfiguration
 
@@ -69,8 +69,8 @@ Dieses Projekt ist eine Node.js-Anwendung, die einen KI-gestützten Chat-Assiste
     # ========================================================================================
 
     # AI Provider Selection [REQUIRED]
-    # Options: chatAi (university), openai (official OpenAI), google (Gemini), claude (Anthropic), xai
-    AI_PROVIDER=chatAi
+    # Options: openai (official OpenAI + compatible APIs like university chatAi), google (Gemini), claude (Anthropic), xai
+    AI_PROVIDER=openai
 
     # Primary API Key [REQUIRED] - Used for the selected AI_PROVIDER above
     AI_API_KEY=dein-api-key

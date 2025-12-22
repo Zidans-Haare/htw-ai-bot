@@ -4,9 +4,6 @@ async function loadProvider(provider) {
   if (!providerModule || providerModule.name !== provider) {
     let modulePath;
     switch (provider) {
-      case 'chatAi':
-        modulePath = './chatAiProvider.js';
-        break;
       case 'openai':
         modulePath = './openaiProvider.js';
         break;
