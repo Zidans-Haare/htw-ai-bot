@@ -54,7 +54,7 @@ model conversations {
   anonymous_user_id String
   category          String?    @default("Unkategorisiert")
   ai_confidence     Float?
-  created_at        DateTime
+  created_at        DateTime @default(now())
   updated_at        DateTime   @updatedAt
   messages          messages[]
 }
@@ -129,7 +129,7 @@ model messages {
   conversation_id String
   role            String
   content         String
-  created_at      DateTime
+  created_at      DateTime @default(now())
   updated_at      DateTime      @updatedAt
   conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
 }
