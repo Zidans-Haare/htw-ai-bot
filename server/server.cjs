@@ -103,11 +103,15 @@ const isDev = process.argv.includes('-dev');
 
 const STATIC_ASSET_MAX_AGE_SECONDS = 60 * 60 * 24 * 14; // 14 days
 const staticCacheControl = (res, filePath) => {
-  // Cache control removed, handled by Vite
+  if (filePath.endsWith('.html')) {
+    res.set('Cache-Control', 'no-cache, must-revalidate');
+  } else {
+    res.set('Cache-Control', `public, max-age=${STATIC_ASSET_MAX_AGE_SECONDS}, immutable`);
+  }
 };
 const staticAssetOptions = { setHeaders: staticCacheControl };
 const setHtmlNoCache = (res) => {
-  // Cache control removed, handled by Vite
+  res.set('Cache-Control', 'no-cache, must-revalidate');
 };
 
 // CLI options
