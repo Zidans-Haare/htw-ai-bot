@@ -69,7 +69,10 @@
     "unpdf": "^1.3.2",
     "unzipper": "^0.12.3",
     "uuid": "^8.3.2",
-    "winston": "^3.18.3"
+    "winston": "^3.18.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@google/genai": "^1.34.0"
   },
   "optionalDependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
@@ -103,6 +106,11 @@
     "supertest": "^7.0.0",
     "tailwindcss": "^4.1.14",
     "vite": "^7.1.10",
-    "vite-plugin-static-copy": "^3.1.4"
+    "vite-plugin-static-copy": "^3.1.4",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@types/node": "^22.10.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2"
   }
 }

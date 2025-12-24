@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite';
-import { resolve, extname } from 'path';
-import postcss from 'postcss'; // Not needed as plugin, but ensure postcss.config.js is in root
+import { defineConfig, loadEnv } from 'vite';
+import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
 import { createLogger } from 'vite'
 
 const logger = createLogger()
@@ -11,102 +11,106 @@ logger.warnOnce = (msg) => {
   originalWarnOnce(msg);
 }
 
-// logger.warn = () => {}  // commented out
-// logger.info = () => {}  // commented out
-// logger.error = () => {}  // commented out
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const useNewUI = env.USE_NEW_UI === 'true';
 
-export default defineConfig({
-  // logLevel: 'silent',
-  customLogger: logger,
+  return {
+    // logLevel: 'silent',
+    customLogger: logger,
 
-  plugins: [
-    {
-      name: 'mpa-rewrites',
-      configureServer(server) {
-        server.middlewares.use((req, _res, next) => {
-          const url = new URL(req.url, 'http://localhost');
-          const { pathname } = url;
+    plugins: [
+      react(),
+      {
+        name: 'mpa-rewrites',
+        configureServer(server) {
+          server.middlewares.use((req, _res, next) => {
+            const url = new URL(req.url, 'http://localhost');
+            const { pathname } = url;
 
-          // Allow Vite's own internal endpoints to pass through untouched
-          if (
-            pathname.startsWith('/@vite/') ||
-            pathname === '/@vite/client' ||
-            pathname.startsWith('/@id/') ||
-            pathname.startsWith('/__vite_')
-          ) {
-            return next();
-          }
+            // Allow Vite's own internal endpoints to pass through untouched
+            if (
+              pathname.startsWith('/@vite/') ||
+              pathname === '/@vite/client' ||
+              pathname.startsWith('/@id/') ||
+              pathname.startsWith('/__vite_')
+            ) {
+              return next();
+            }
 
-          if (pathname === '/' || pathname === '/index.html') {
-            req.url = '/src/bot/index.html';
-            return next();
-          }
+            if (pathname === '/' || pathname === '/index.html') {
+              if (useNewUI) {
+                req.url = '/src/new-ui/index.html';
+              } else {
+                req.url = '/src/bot/index.html';
+              }
+              return next();
+            }
 
-          if (pathname === '/admin' || pathname === '/admin/') {
-            req.url = '/src/admin/index.html';
-            return next();
-          }
+            if (pathname === '/admin' || pathname === '/admin/') {
+              req.url = '/src/admin/index.html';
+              return next();
+            }
 
-          if (pathname === '/dash' || pathname === '/dash/') {
-            req.url = '/src/dash/index.html';
-            return next();
-          }
+            if (pathname === '/dash' || pathname === '/dash/') {
+              req.url = '/src/dash/index.html';
+              return next();
+            }
 
-          if (pathname === '/view' || pathname === '/view/') {
-            req.url = '/src/view/index.html';
-            return next();
-          }
+            if (pathname === '/view' || pathname === '/view/') {
+              req.url = '/src/view/index.html';
+              return next();
+            }
 
-          if (pathname === '/login' || pathname === '/login/') {
-            req.url = '/src/login/index.html';
-            return next();
-          }
+            if (pathname === '/login' || pathname === '/login/') {
+              req.url = '/src/login/index.html';
+              return next();
+            }
 
-          next();
-        });
+            next();
+          });
+        },
+      },
+    ],
+    server: {
+      host: '127.0.0.1',
+      port: 5173,
+      strictPort: true,
+      compress: true,
+      allowedHosts: ['aski.htw-dresden.de', 'localhost', '127.0.0.1'],
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/uploads': {
+          target: 'http://localhost:3000',
+        },
       },
     },
-  ],
-  server: {
-    host: '127.0.0.1',
-    port: 5173,
-    strictPort: true,
-    compress: true,
-    allowedHosts: ['aski.htw-dresden.de',  'localhost', '127.0.0.1'],
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
-      '/uploads': {
-        target: 'http://localhost:3000',
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
       },
     },
-    // allowedHosts: 'auto',
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'), // Keep for easy imports
+    css: {
+      postcss: './postcss.config.js',
     },
-  },
-  css: {
-    postcss: './postcss.config.js', // Enables your Tailwind/PostCSS setup
-  },
-  build: {
-    rollupOptions: {
-      input: {
-        // Maps your subfolder HTMLs to output paths (e.g., dist/bot/index.html served at /bot/)
-        bot: resolve(__dirname, 'src/bot/index.html'),    // Will be root (/) with server tweak below
-        admin: resolve(__dirname, 'src/admin/index.html'), // Served at /admin/
-        dash: resolve(__dirname, 'src/dash/index.html'),   // Served at /dash/
-        login: resolve(__dirname, 'src/login/index.html'), // Served at /login/
-      },
-      output: {
-        // Optional: Nest outputs to match input folders for easier Express serving
-        entryFileNames: 'assets/[name].[hash].js',
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]',
+    build: {
+      rollupOptions: {
+        input: {
+          bot: resolve(__dirname, 'src/bot/index.html'),
+          newui: resolve(__dirname, 'src/new-ui/index.html'),
+          admin: resolve(__dirname, 'src/admin/index.html'),
+          dash: resolve(__dirname, 'src/dash/index.html'),
+          login: resolve(__dirname, 'src/login/index.html'),
+        },
+        output: {
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
+        },
       },
     },
-  },
+  };
 });
