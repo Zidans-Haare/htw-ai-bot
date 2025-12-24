@@ -8,10 +8,15 @@ import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import SettingsModal from './components/SettingsModal';
 import { gemini } from './services/geminiService';
+import { authService } from './services/authService';
+import { historyService } from './services/historyService';
+
+
+
 
 const App: React.FC = () => {
   const [authState, setAuthState] = useState<AuthState>('loading');
-  const [user, setUser] = useState<User>(MOCK_USER);
+  const [user, setUser] = useState<User | null>(null);
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -19,13 +24,57 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Initial Boot Sequence
+
+  // Initial Boot Sequence & Session Check
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAuthState('landing');
-    }, 1500);
-    return () => clearTimeout(timer);
+    const initApp = async () => {
+      try {
+        const sessionUser = await authService.getSession();
+        if (sessionUser) {
+          setUser(sessionUser);
+          setAuthState('authenticated');
+          // Load settings from profile if available
+          if (sessionUser.profile?.uiSettings && Object.keys(sessionUser.profile.uiSettings).length > 0) {
+            setSettings(prev => ({ ...prev, ...sessionUser.profile!.uiSettings }));
+          }
+        } else {
+          // If not logged in, we stay on landing or go to landing
+          setAuthState('landing');
+        }
+      } catch (e) {
+        console.error("Session check failed", e);
+        setAuthState('landing');
+      }
+    };
+    initApp();
   }, []);
+
+  // Fetch History on Auth Change
+  useEffect(() => {
+    const loadHistory = async () => {
+      // If logged in, use user ID, otherwise use anonymous ID from local storage if available? 
+      // For now, let's assume we use a locally generated anonymous ID if not logged in.
+      let anonymousId = localStorage.getItem('anonymousUserId');
+      if (!anonymousId) {
+        anonymousId = crypto.randomUUID();
+        localStorage.setItem('anonymousUserId', anonymousId);
+      }
+
+      if (authState === 'authenticated' && user) {
+        // Fetch authenticated history
+        const history = await historyService.fetchHistory(anonymousId); // Backend handles linking user ID via session
+        setChats(history);
+      } else if (authState === 'authenticated' && !user) {
+        // Should not happen, but safety net
+      } else {
+        // Fetch anonymous history
+        const history = await historyService.fetchHistory(anonymousId);
+        setChats(history);
+      }
+    };
+
+    loadHistory();
+  }, [authState, user]);
 
   // Sync settings with DOM
   useEffect(() => {
@@ -41,6 +90,21 @@ const App: React.FC = () => {
     else root.classList.remove('reduce-motion');
   }, [settings]);
 
+  // Persist settings to backend
+  useEffect(() => {
+    if (authState === 'authenticated' && user) {
+      const timeoutId = setTimeout(() => {
+        authService.updateProfile({
+          ui_settings: settings,
+          // Preserve other profile fields if we had them full
+          // For now we assume the backend merges or we send mostly UI settings
+        }).catch(console.error);
+      }, 1000); // Debounce saves
+      return () => clearTimeout(timeoutId);
+    }
+  }, [settings, authState]);
+
+
   const speak = useCallback((text: string) => {
     if (!settings.textToSpeech) return;
     window.speechSynthesis.cancel();
@@ -50,7 +114,7 @@ const App: React.FC = () => {
   }, [settings.textToSpeech, settings.speechRate]);
 
   const handleSendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || !user) return;
+    if (!content.trim()) return;
 
     let targetChatId = currentChatId;
     let updatedChats = [...chats];
@@ -91,7 +155,25 @@ const App: React.FC = () => {
         parts: [{ text: m.content }]
       })) || [];
 
-      const { text: aiText, conversationId: serverConversationId } = await gemini.generateResponse(content, chatContext, targetChatId, settings.thinkingMode);
+      let anonymousId = localStorage.getItem('anonymousUserId');
+      if (!anonymousId) {
+        anonymousId = crypto.randomUUID();
+        localStorage.setItem('anonymousUserId', anonymousId);
+      }
+
+      const userMetadata = {
+        anonymousUserId: anonymousId,
+        userDisplayName: user?.name,
+        profilePreferences: user?.profile?.mensaPreferences
+      };
+
+      const { text: aiText, conversationId: serverConversationId } = await gemini.generateResponse(
+        content,
+        chatContext,
+        targetChatId,
+        settings.thinkingMode,
+        userMetadata
+      );
 
       const botMessage: Message = {
         id: `msg_bot_${Date.now()}`,
@@ -129,23 +211,44 @@ const App: React.FC = () => {
     }
   }, [currentChatId, chats, user, settings.thinkingMode, settings.textToSpeech, speak]);
 
-  const deleteChat = (id: string) => {
+  const deleteChat = async (id: string) => {
+    // Optimistic update
     setChats(prev => prev.filter(c => c.id !== id));
     if (currentChatId === id) setCurrentChatId(null);
+    await historyService.deleteChat(id);
   };
 
   const toggleFavorite = (id: string) => {
     setChats(prev => prev.map(c => c.id === id ? { ...c, isFavorite: !c.isFavorite } : c));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authService.logout();
+    setUser(null);
     setAuthState('landing');
     setCurrentChatId(null);
     setIsSidebarOpen(false);
   };
 
+  const handleLogin = async (email: string, pass: string) => {
+    try {
+      const loggedUser = await authService.login(email, pass);
+      setUser(loggedUser);
+      setAuthState('authenticated');
+    } catch (error: any) {
+      alert(error.message || "Login failed");
+    }
+  };
+
   const handleUpdateUser = (updatedUser: Partial<User>) => {
-    setUser(prev => ({ ...prev, ...updatedUser }));
+    setUser(prev => {
+      if (!prev) return null;
+      return { ...prev, ...updatedUser };
+    });
+
+    if (updatedUser.name) {
+      authService.updateProfile({ display_name: updatedUser.name }).catch(console.error);
+    }
   };
 
   if (authState === 'loading') return (
@@ -167,7 +270,14 @@ const App: React.FC = () => {
   );
 
   if (authState === 'landing') return <LandingPage onGetStarted={() => setAuthState('login')} />;
-  if (authState !== 'authenticated') return <AuthScreens state={authState} setState={setAuthState} />;
+
+  if (authState !== 'authenticated') return (
+    <AuthScreens
+      state={authState}
+      setState={setAuthState}
+      onLogin={handleLogin}
+    />
+  );
 
   const currentChat = chats.find(c => c.id === currentChatId);
 
@@ -186,7 +296,7 @@ const App: React.FC = () => {
         currentChatId={currentChatId}
         onSelectChat={(id) => { setCurrentChatId(id); setIsSidebarOpen(false); }}
         onNewChat={() => { setCurrentChatId(null); setIsSidebarOpen(false); }}
-        user={user}
+        user={user || { id: 'guest', name: 'Guest', email: '', accessLevel: 'Student' }}
         onOpenSettings={() => { setIsSettingsOpen(true); setIsSidebarOpen(false); }}
         isOpen={isSidebarOpen}
         onLogout={logout}
@@ -204,7 +314,7 @@ const App: React.FC = () => {
           onToggleFavorite={toggleFavorite}
         />
 
-        {isSettingsOpen && (
+        {isSettingsOpen && user && (
           <SettingsModal
             settings={settings}
             user={user}
@@ -219,3 +329,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

@@ -1,12 +1,20 @@
 
 export type AuthState = 'loading' | 'landing' | 'login' | 'forgot-password' | 'reset-success' | 'authenticated';
 
+export interface UserProfile {
+  displayName?: string;
+  mensaPreferences?: any;
+  favoritePrompts?: any[];
+  uiSettings?: any;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  accessLevel: 'Internal' | 'Admin';
+  accessLevel: 'Student' | 'Internal' | 'Admin';
   avatar?: string;
+  profile?: UserProfile;
 }
 
 export interface Message {
@@ -22,7 +30,7 @@ export interface ChatSession {
   title: string;
   lastUpdated: number;
   messages: Message[];
-  isFavorite: boolean;
+  isFavorite?: boolean;
 }
 
 export interface AppSettings {

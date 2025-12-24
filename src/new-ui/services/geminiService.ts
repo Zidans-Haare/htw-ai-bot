@@ -3,9 +3,13 @@ export class GeminiService {
   async generateResponse(
     prompt: string,
     history: { role: 'user' | 'model'; parts: { text: string }[] }[],
-    // conversationId and isThinking are optional to match existing calls
     conversationId: string | null = null,
-    isThinking: boolean = false
+    isThinking: boolean = false,
+    userMetadata?: {
+      anonymousUserId?: string;
+      userDisplayName?: string;
+      profilePreferences?: any;
+    }
   ) {
     try {
       // Bridge to existing HTW Bot Backend
@@ -18,6 +22,9 @@ export class GeminiService {
           prompt: prompt,
           conversationId: conversationId,
           timezoneOffset: new Date().getTimezoneOffset(),
+          anonymousUserId: userMetadata?.anonymousUserId,
+          userDisplayName: userMetadata?.userDisplayName,
+          profilePreferences: userMetadata?.profilePreferences
         })
       });
 
@@ -38,9 +45,9 @@ export class GeminiService {
     }
   }
 
-  async sendMessageStream(prompt: string, history: any[]) {
+  async sendMessageStream(prompt: string, history: any[], userMetadata?: any) {
     // Streaming not fully ported for this quick integration, falling back to generateResponse structure
-    return this.generateResponse(prompt, history);
+    return this.generateResponse(prompt, history, null, false, userMetadata);
   }
 }
 

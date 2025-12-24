@@ -77,7 +77,7 @@ process.on('uncaughtException', async (err) => {
 });
 
 // --- Controller Imports (after dotenv) ---
-const { streamChat, getSuggestions, testApiKey } = require('./controllers/aiController.cjs');
+const { streamChat, getSuggestions, testApiKey, getChatHistory } = require('./controllers/aiController.cjs');
 const feedbackController = require('./controllers/feedbackController.cjs');
 const adminController = require('./controllers/adminController.cjs');
 const auth = require('./controllers/authController.cjs');
@@ -443,6 +443,7 @@ app.use('/api', adminController(auth.getSession, logAction, {
 }));
 app.use('/api/dashboard', dashboardController);
 app.get("/api/view/articles", viewController.getPublishedArticles);
+app.get('/api/history', getChatHistory);
 
 // --- Dashboard Routes ---
 app.use('/dash', express.static(path.join(__dirname, '..', 'dist', 'src', 'dash'), staticAssetOptions));

@@ -64,9 +64,29 @@ function convertToGoogle(tools) {
     functionDeclarations: tools.map(tool => ({
       name: tool.function.name,
       description: tool.function.description,
-      parameters: tool.function.parameters
+      parameters: cleanGoogleParameters(tool.function.parameters)
     }))
   }];
+}
+
+function cleanGoogleParameters(parameters) {
+  if (!parameters || typeof parameters !== 'object') return parameters;
+
+  // Create a deep copy to avoid mutating original
+  const clean = JSON.parse(JSON.stringify(parameters));
+
+  const removeForbidden = (obj) => {
+    if (obj && typeof obj === 'object') {
+      delete obj.$schema;
+      delete obj.additionalProperties;
+      for (const key in obj) {
+        removeForbidden(obj[key]);
+      }
+    }
+  };
+
+  removeForbidden(clean);
+  return clean;
 }
 
 // Anthropic Claude format

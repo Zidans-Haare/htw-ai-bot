@@ -711,4 +711,85 @@ async function getSuggestions(req, res) {
   }
 }
 
-module.exports = { streamChat, getSuggestions, testApiKey };
+/**
+ * @swagger
+ * /api/history:
+ *   get:
+ *     summary: Chat-Verlauf abrufen
+ *     tags: [AI]
+ *     parameters:
+ *       - in: query
+ *         name: anonymousUserId
+ *         schema:
+ *           type: string
+ *         description: Anonyme Benutzer-ID
+ *     responses:
+ *       200:
+ *         description: Liste der Chats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   messages:
+ *                     type: array
+ *       500:
+ *         description: Serverfehler
+ */
+async function getChatHistory(req, res) {
+  try {
+    const userId = req.session?.user?.id;
+    const anonymousUserId = req.query.anonymousUserId;
+
+    if (!userId && !anonymousUserId) {
+      return res.json([]);
+    }
+
+    const whereClause = userId
+      ? { user_id: userId }
+      : { anonymous_user_id: anonymousUserId };
+
+    const conversations = await Conversation.findMany({
+      where: whereClause,
+      orderBy: { created_at: 'desc' },
+      take: 50,
+      include: {
+        messages: {
+          orderBy: { created_at: 'asc' }
+        }
+      }
+    });
+
+    const formattedHistory = conversations.map(convo => {
+      // Create a title from the first user message if possible
+      const firstUserMsg = convo.messages.find(m => m.role === 'user');
+      const title = firstUserMsg
+        ? (firstUserMsg.content.length > 40 ? firstUserMsg.content.substring(0, 40) + '...' : firstUserMsg.content)
+        : 'Neue Konversation';
+
+      return {
+        id: convo.id,
+        title: title,
+        updatedAt: convo.created_at,
+        messages: convo.messages.map(msg => ({
+          text: msg.content,
+          isUser: msg.role === 'user',
+          timestamp: msg.created_at
+        }))
+      };
+    });
+
+    res.json(formattedHistory);
+  } catch (error) {
+    console.error('Error fetching chat history:', error);
+    res.status(500).json({ error: 'Failed to fetch chat history' });
+  }
+}
+
+module.exports = { streamChat, getSuggestions, testApiKey, getChatHistory };

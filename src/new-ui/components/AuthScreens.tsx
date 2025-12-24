@@ -2,13 +2,16 @@
 import React, { useState } from 'react';
 import { AuthState } from '../types';
 
+
 interface Props {
   state: AuthState;
   setState: (s: AuthState) => void;
+  onLogin?: (email: string, pass: string) => void;
 }
 
-const AuthScreens: React.FC<Props> = ({ state, setState }) => {
+const AuthScreens: React.FC<Props> = ({ state, setState, onLogin }) => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   if (state === 'login') {
     return (
@@ -21,26 +24,32 @@ const AuthScreens: React.FC<Props> = ({ state, setState }) => {
             <h1 className="text-slate-900 text-3xl font-bold tracking-tight">Nexus Assistant</h1>
             <p className="text-slate-500 text-sm font-medium">Internal Corporate Access • Secure Login</p>
           </div>
-          
-          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); setState('authenticated'); }}>
+
+          <form className="space-y-5" onSubmit={(e) => {
+            e.preventDefault();
+            if (onLogin) onLogin(email, password);
+            else setState('authenticated');
+          }}>
             <div className="space-y-2">
               <label className="text-slate-900 text-sm font-semibold ml-1">Work Identity</label>
               <div className="relative flex items-center">
                 <span className="absolute left-4 text-slate-400 material-symbols-outlined text-[20px]">person</span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 h-12 pl-11 pr-4 focus:ring-slate-900 focus:border-slate-900 transition-all"
                   placeholder="employee@nexus.internal"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-slate-900 text-sm font-semibold">Password</label>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setState('forgot-password')}
                   className="text-slate-500 text-xs font-medium hover:text-slate-900"
                 >
@@ -49,11 +58,13 @@ const AuthScreens: React.FC<Props> = ({ state, setState }) => {
               </div>
               <div className="relative flex items-center">
                 <span className="absolute left-4 text-slate-400 material-symbols-outlined text-[20px]">lock</span>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 h-12 pl-11 pr-4 focus:ring-slate-900 focus:border-slate-900 transition-all"
                   placeholder="••••••••"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -62,7 +73,7 @@ const AuthScreens: React.FC<Props> = ({ state, setState }) => {
               Enter Workspace
             </button>
           </form>
-          
+
           <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center gap-1 text-sm">
             <p className="text-slate-500">Need access?</p>
             <button className="text-slate-900 font-semibold hover:underline">Contact IT Admin</button>
@@ -83,13 +94,13 @@ const AuthScreens: React.FC<Props> = ({ state, setState }) => {
             <h1 className="text-slate-900 text-2xl font-bold tracking-tight">Forgot Password?</h1>
             <p className="text-slate-500 text-sm">Enter your work email to receive a reset link.</p>
           </div>
-          
+
           <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setState('reset-success'); }}>
             <div className="space-y-2">
               <label className="text-slate-900 text-sm font-semibold ml-1">Email Address</label>
               <div className="relative group">
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   className="w-full rounded-xl border border-slate-200 h-12 px-4 pr-10 focus:ring-slate-900 transition-all"
                   placeholder="employee@nexus.internal"
                   required
@@ -102,7 +113,7 @@ const AuthScreens: React.FC<Props> = ({ state, setState }) => {
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           </form>
-          
+
           <div className="mt-8 text-center">
             <button onClick={() => setState('login')} className="text-sm font-medium text-slate-500 hover:text-slate-900 inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -125,7 +136,7 @@ const AuthScreens: React.FC<Props> = ({ state, setState }) => {
           <p className="text-sm text-slate-500 max-w-[320px] mx-auto mb-10 leading-relaxed">
             We've sent a password reset link to your email. Please check your inbox and follow the instructions.
           </p>
-          <button 
+          <button
             onClick={() => setState('login')}
             className="w-full h-12 bg-slate-900 hover:bg-black text-white font-bold rounded-lg shadow-lg active:scale-95 transition-all"
           >
