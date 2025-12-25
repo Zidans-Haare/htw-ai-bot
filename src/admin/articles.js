@@ -12,6 +12,7 @@ let articlesOffset = 0;
 const listEl = document.getElementById('article-list');
 const searchEl = document.getElementById('search');
 const articleInput = document.getElementById('article-input');
+const articleAccessLevel = document.getElementById('article-access-level');
 const saveBtn = document.getElementById('save-btn');
 const deleteBtn = document.getElementById('delete-btn');
 const addBtn = document.getElementById('add-heading');
@@ -52,7 +53,7 @@ async function markDiffInMarkdown(originalDescription, improvedText) {
     const dmp = new diff_match_patch();
     const diff = dmp.diff_main(originalDescription, improvedText);
     dmp.diff_cleanupSemantic(diff);
-    
+
     let markdown = '';
     diff.forEach(part => {
       const type = part[0];
@@ -65,11 +66,11 @@ async function markDiffInMarkdown(originalDescription, improvedText) {
       }
     });
     return markdown;
-} catch (error) {
+  } catch (error) {
     console.error('Diff patch error:', error);
     aiCheckResponseEl.innerText = `Fehler beim Diff: ${error.message}`;
-}
-  
+  }
+
 }
 
 async function handleImproveClick(suggestionText, textBeforeAiCheck) {
@@ -79,7 +80,7 @@ async function handleImproveClick(suggestionText, textBeforeAiCheck) {
 
   // Show loading state
   const improveBtn = document.querySelector(`button[data-suggestion="${suggestionText}"]`);
-  if(improveBtn) {
+  if (improveBtn) {
     improveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     improveBtn.disabled = true;
   }
@@ -108,7 +109,7 @@ async function handleImproveClick(suggestionText, textBeforeAiCheck) {
   } catch (error) {
     console.error('Improve Text Error:', error);
     alert(`Fehler bei der Verbesserung: ${error.message}`);
-    if(improveBtn) {
+    if (improveBtn) {
       improveBtn.innerHTML = 'Verbessern';
       improveBtn.disabled = false;
     }
@@ -119,7 +120,7 @@ async function handleAiCheck() {
   let text = editor.getMarkdown();
   // Remove strikethroughs before analysis
   text = text.replace(/~~/g, '');
-  
+
   // Store the original, clean text
   const textBeforeAiCheck = text;
 
@@ -142,7 +143,7 @@ async function handleAiCheck() {
   const charsPerSecond = 100; // Add 1 second for every 100 characters
   const maxTime = 90; // Maximum estimated time
   const estimatedTime = Math.min(maxTime, baseTime + Math.floor(text.length / charsPerSecond));
-  
+
   let timeLeft = estimatedTime;
   timerEl.textContent = timeLeft;
   timerInterval = setInterval(() => {
@@ -176,7 +177,7 @@ async function handleAiCheck() {
 
     // Mark only the initial grammar/spelling diffs
     let markdown = await markDiffInMarkdown(text, result.correctedText);
-    
+
     editor.setMarkdown(markdown);
 
     // Populate the modal with suggestions and contradictions
@@ -185,69 +186,69 @@ async function handleAiCheck() {
     const actualCorrections = result.corrections.filter(item => item.original !== item.corrected);
 
     if (actualCorrections.length === 0 && result.contradictions.length === 0 && result.suggestions.length === 0) {
-        resultsEl.innerHTML = '<p>Keine weiteren Vorschläge oder Widersprüche gefunden. Die Rechtschreibkorrekturen wurden direkt im Text markiert.</p>';
+      resultsEl.innerHTML = '<p>Keine weiteren Vorschläge oder Widersprüche gefunden. Die Rechtschreibkorrekturen wurden direkt im Text markiert.</p>';
     } else {
-        if (actualCorrections.length > 0) {
-            const correctionsList = document.createElement('div');
-            correctionsList.innerHTML = '<h4 class="font-bold mb-2">Rechtschreib- & Grammatik-Hinweise</h4>';
-            actualCorrections.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'ai-correction-item p-2 bg-gray-50 rounded mb-2';
-                div.innerHTML = `Geändert von "<strong>${item.original}</strong>" zu "<strong>${item.corrected}</strong>" - <em>${item.reason}</em>`;
-                correctionsList.appendChild(div);
-            });
-            resultsEl.appendChild(correctionsList);
-        }
+      if (actualCorrections.length > 0) {
+        const correctionsList = document.createElement('div');
+        correctionsList.innerHTML = '<h4 class="font-bold mb-2">Rechtschreib- & Grammatik-Hinweise</h4>';
+        actualCorrections.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'ai-correction-item p-2 bg-gray-50 rounded mb-2';
+          div.innerHTML = `Geändert von "<strong>${item.original}</strong>" zu "<strong>${item.corrected}</strong>" - <em>${item.reason}</em>`;
+          correctionsList.appendChild(div);
+        });
+        resultsEl.appendChild(correctionsList);
+      }
 
-        const createSuggestionItem = (item, type) => {
-            const suggestionText = type === 'contradiction' ? item.contradiction : item.suggestion;
-            const details = document.createElement('details');
-            details.className = 'mb-2 cursor-pointer';
-            const summary = document.createElement('summary');
-            summary.className = `p-2 rounded flex justify-between items-center ${type === 'contradiction' ? 'bg-yellow-100' : 'bg-blue-100'}`;
-            
-            const suggestionContent = document.createElement('span');
-            suggestionContent.textContent = suggestionText;
-            
-            const improveBtn = document.createElement('button');
-            improveBtn.className = 'ml-4 px-3 py-1 text-sm rounded-md btn-secondary';
-            improveBtn.textContent = 'Verbessern';
-            improveBtn.dataset.suggestion = suggestionText;
-            improveBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleImproveClick(suggestionText, textBeforeAiCheck);
-            };
+      const createSuggestionItem = (item, type) => {
+        const suggestionText = type === 'contradiction' ? item.contradiction : item.suggestion;
+        const details = document.createElement('details');
+        details.className = 'mb-2 cursor-pointer';
+        const summary = document.createElement('summary');
+        summary.className = `p-2 rounded flex justify-between items-center ${type === 'contradiction' ? 'bg-yellow-100' : 'bg-blue-100'}`;
 
-            summary.appendChild(suggestionContent);
-            summary.appendChild(improveBtn);
-            details.appendChild(summary);
+        const suggestionContent = document.createElement('span');
+        suggestionContent.textContent = suggestionText;
 
-            const reason = document.createElement('p');
-            reason.className = 'p-2 mt-1 bg-gray-50';
-            reason.textContent = item.reason;
-            details.appendChild(reason);
+        const improveBtn = document.createElement('button');
+        improveBtn.className = 'ml-4 px-3 py-1 text-sm rounded-md btn-secondary';
+        improveBtn.textContent = 'Verbessern';
+        improveBtn.dataset.suggestion = suggestionText;
+        improveBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleImproveClick(suggestionText, textBeforeAiCheck);
+        };
 
-            return details;
-        }
+        summary.appendChild(suggestionContent);
+        summary.appendChild(improveBtn);
+        details.appendChild(summary);
 
-        if (result.contradictions.length > 0) {
-            const contradictionsList = document.createElement('div');
-            contradictionsList.innerHTML = '<h4 class="font-bold mt-4 mb-2">Widersprüche & Dopplungen</h4>';
-            result.contradictions.forEach(item => {
-                contradictionsList.appendChild(createSuggestionItem(item, 'contradiction'));
-            });
-            resultsEl.appendChild(contradictionsList);
-        }
+        const reason = document.createElement('p');
+        reason.className = 'p-2 mt-1 bg-gray-50';
+        reason.textContent = item.reason;
+        details.appendChild(reason);
 
-        if (result.suggestions.length > 0) {
-            const suggestionsList = document.createElement('div');
-            suggestionsList.innerHTML = '<h4 class="font-bold mt-4 mb-2">Stil & Tonalität</h4>';
-            result.suggestions.forEach(item => {
-                suggestionsList.appendChild(createSuggestionItem(item, 'suggestion'));
-            });
-            resultsEl.appendChild(suggestionsList);
-        }
+        return details;
+      }
+
+      if (result.contradictions.length > 0) {
+        const contradictionsList = document.createElement('div');
+        contradictionsList.innerHTML = '<h4 class="font-bold mt-4 mb-2">Widersprüche & Dopplungen</h4>';
+        result.contradictions.forEach(item => {
+          contradictionsList.appendChild(createSuggestionItem(item, 'contradiction'));
+        });
+        resultsEl.appendChild(contradictionsList);
+      }
+
+      if (result.suggestions.length > 0) {
+        const suggestionsList = document.createElement('div');
+        suggestionsList.innerHTML = '<h4 class="font-bold mt-4 mb-2">Stil & Tonalität</h4>';
+        result.suggestions.forEach(item => {
+          suggestionsList.appendChild(createSuggestionItem(item, 'suggestion'));
+        });
+        resultsEl.appendChild(suggestionsList);
+      }
     }
 
   } catch (error) {
@@ -277,12 +278,12 @@ const undoToolbarItem = {
 };
 
 function createMagicWandButton() {
-    const button = document.createElement('button');
-    button.className = 'toastui-editor-toolbar-icons ai-check-button';
-    button.style.backgroundImage = 'none';
-    button.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i>`;
-    button.addEventListener('click', handleAiCheck);
-    return button;
+  const button = document.createElement('button');
+  button.className = 'toastui-editor-toolbar-icons ai-check-button';
+  button.style.backgroundImage = 'none';
+  button.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i>`;
+  button.addEventListener('click', handleAiCheck);
+  return button;
 }
 
 const editor = new Editor({
@@ -350,10 +351,10 @@ async function loadArticles(append = false) {
       allArticles = articles;
       selectedArticleEl = null;
     }
-     renderArticles(allArticles, append);
-     articlesOffset += 100;
-     // Add load more if we got 100
-      if (articles.length === 100) {
+    renderArticles(allArticles, append);
+    articlesOffset += 100;
+    // Add load more if we got 100
+    if (articles.length === 100) {
       let loadMoreBtn = document.getElementById('load-more-articles');
       if (!loadMoreBtn) {
         loadMoreBtn = document.createElement('li');
@@ -382,25 +383,25 @@ function renderArticles(items, append = false) {
     listEl.innerHTML = '<div class="p-2 text-(--secondary-text)">Keine Überschriften gefunden.</div>';
     return;
   }
-      const loadMoreBtn = document.getElementById('load-more-articles');
+  const loadMoreBtn = document.getElementById('load-more-articles');
   const insertBefore = append && loadMoreBtn ? loadMoreBtn : null;
   items.forEach(h => {
     const li = document.createElement('li');
     li.textContent = h.article;
     li.className = 'article-item p-2 cursor-pointer rounded transition-colors';
     li.dataset.id = h.id;
-       li.addEventListener('click', () => {
-         if (selectedArticleEl) {
-           selectedArticleEl.classList.remove('active-article');
-         }
-         li.classList.add('active-article');
-         selectedArticleEl = li;
-         // Toggle to edit view
-         editorListContainer.classList.add('hidden');
-         editorEditContainer.classList.remove('hidden');
-         setEditorHeight(); // Set height immediately after showing
-         loadEntry(h.id);
-       });
+    li.addEventListener('click', () => {
+      if (selectedArticleEl) {
+        selectedArticleEl.classList.remove('active-article');
+      }
+      li.classList.add('active-article');
+      selectedArticleEl = li;
+      // Toggle to edit view
+      editorListContainer.classList.add('hidden');
+      editorEditContainer.classList.remove('hidden');
+      setEditorHeight(); // Set height immediately after showing
+      loadEntry(h.id);
+    });
     if (insertBefore) {
       listEl.insertBefore(li, insertBefore);
     } else {
@@ -420,6 +421,7 @@ async function loadEntry(id) {
     console.log('Entry received:', entry);
     currentId = entry.id;
     articleInput.value = entry.article;
+    if (articleAccessLevel) articleAccessLevel.value = entry.access_level || 'employee';
     editor.setMarkdown(entry.description);
     originalArticle = entry.article;
     originalDescription = entry.description;
@@ -430,8 +432,8 @@ async function loadEntry(id) {
     document.getElementById('last-edited-by').innerHTML = `last edit by:<br>${entry.editor || ''}<br>${formattedDate}`;
     setSaveButtonState(false);
 
-     // Adjust editor height after layout changes
-     setTimeout(setEditorHeight, 100);
+    // Adjust editor height after layout changes
+    setTimeout(setEditorHeight, 100);
   } catch (err) {
     console.error('Failed to load entry:', err);
   }
@@ -443,6 +445,7 @@ async function saveEntry() {
   const payload = {
     article: articleInput.value.trim(),
     description: cleanedText.trim(),
+    access_level: articleAccessLevel ? articleAccessLevel.value : 'employee',
     active: true
   };
   if (!payload.article || !payload.description) return;
@@ -483,14 +486,14 @@ async function saveEntry() {
         // Update banner text
         const answeredInDiv = document.getElementById('question-answered-in');
         if (answeredInDiv) {
-            answeredInDiv.innerHTML = `<strong>Beantwortet in:</strong> ${payload.article}`;
-            answeredInDiv.style.display = 'block';
+          answeredInDiv.innerHTML = `<strong>Beantwortet in:</strong> ${payload.article}`;
+          answeredInDiv.style.display = 'block';
         }
       }
     }
 
-     await loadArticles();
-     await loadEntry(currentId);
+    await loadArticles();
+    await loadEntry(currentId);
   } catch (err) {
     console.error('Failed to save entry:', err);
     alert('Failed to save entry: ' + err.message);
@@ -503,17 +506,17 @@ async function deleteEntry() {
     console.log('Deleting entry:', currentId);
     await fetchAndParse(`/api/admin/entries/${currentId}`, { method: 'DELETE' });
     console.log('Entry deleted');
-     currentId = null;
-     articleInput.value = '';
-     editor.setMarkdown('');
-     document.getElementById('last-edited-by').innerHTML = `last edit by:<br>`;
-      await loadArticles();
-      alert('Gelöscht');
+    currentId = null;
+    articleInput.value = '';
+    editor.setMarkdown('');
+    document.getElementById('last-edited-by').innerHTML = `last edit by:<br>`;
+    await loadArticles();
+    alert('Gelöscht');
 
-      // Show list after delete
-      editorEditContainer.classList.add('hidden');
-      editorListContainer.classList.remove('hidden');
-      editorListContainer.scrollTop = 0;
+    // Show list after delete
+    editorEditContainer.classList.add('hidden');
+    editorListContainer.classList.remove('hidden');
+    editorListContainer.scrollTop = 0;
   } catch (err) {
     console.error('Failed to delete entry:', err);
     alert('Failed to delete entry: ' + err.message);
@@ -534,24 +537,25 @@ function getCurrentId() {
 function initArticles() {
   saveBtn.addEventListener('click', saveEntry);
   deleteBtn.addEventListener('click', deleteEntry);
-    addBtn.addEventListener('click', () => {
-       console.log('Adding new heading...');
-       currentId = null;
-       articleInput.value = '';
-       editor.setMarkdown('');
-       originalArticle = '';
-       originalDescription = '';
-       document.getElementById('last-edited-by').innerHTML = `last edit by:<br>`;
-       checkForChanges();
+  addBtn.addEventListener('click', () => {
+    console.log('Adding new heading...');
+    currentId = null;
+    articleInput.value = '';
+    if (articleAccessLevel) articleAccessLevel.value = 'employee';
+    editor.setMarkdown('');
+    originalArticle = '';
+    originalDescription = '';
+    document.getElementById('last-edited-by').innerHTML = `last edit by:<br>`;
+    checkForChanges();
 
-        // Toggle to edit view
-        editorListContainer.classList.add('hidden');
-        editorEditContainer.classList.remove('hidden');
-        setEditorHeight(); // Set height immediately
+    // Toggle to edit view
+    editorListContainer.classList.add('hidden');
+    editorEditContainer.classList.remove('hidden');
+    setEditorHeight(); // Set height immediately
 
-        // Adjust editor height after layout changes
-        setTimeout(setEditorHeight, 100);
-     });
+    // Adjust editor height after layout changes
+    setTimeout(setEditorHeight, 100);
+  });
   searchEl.addEventListener('input', () => {
     console.log('Search input changed, loading articles...');
     loadArticles();
@@ -564,29 +568,29 @@ function initArticles() {
     aiCheckModal.classList.add('hidden');
   });
 
-    // Back button
-     editorBackBtn.addEventListener('click', () => {
-       editorEditContainer.classList.add('hidden');
-       editorListContainer.classList.remove('hidden');
-      // Scroll to the last viewed item
-      setTimeout(() => {
-        const activeLi = editorListContainer.querySelector('.active-article');
-        if (activeLi) {
-          activeLi.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          editorListContainer.scrollTop = 0;
-        }
-      }, 100);
-      // Adjust editor height after layout changes
-      setTimeout(setEditorHeight, 100);
-    });
+  // Back button
+  editorBackBtn.addEventListener('click', () => {
+    editorEditContainer.classList.add('hidden');
+    editorListContainer.classList.remove('hidden');
+    // Scroll to the last viewed item
+    setTimeout(() => {
+      const activeLi = editorListContainer.querySelector('.active-article');
+      if (activeLi) {
+        activeLi.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        editorListContainer.scrollTop = 0;
+      }
+    }, 100);
+    // Adjust editor height after layout changes
+    setTimeout(setEditorHeight, 100);
+  });
 
-     // Cancel edit question button
-     document.getElementById('cancel-edit-question').addEventListener('click', () => {
-       editorEditContainer.classList.add('hidden');
-       editorListContainer.classList.remove('hidden');
-       editorListContainer.scrollTop = 0;
-     });
+  // Cancel edit question button
+  document.getElementById('cancel-edit-question').addEventListener('click', () => {
+    editorEditContainer.classList.add('hidden');
+    editorListContainer.classList.remove('hidden');
+    editorListContainer.scrollTop = 0;
+  });
 
 
 

@@ -1,9 +1,20 @@
 const express = require('express');
 const { HochschuhlABC } = require('../db.cjs');
 const { chatCompletion } = require('../../utils/aiProvider');
+const vectorStore = require('../../lib/vectorStore');
 
 module.exports = (authMiddleware) => {
   const router = express.Router();
+
+  router.post('/sync-vector-db', authMiddleware, async (req, res) => {
+    try {
+      const stats = await vectorStore.syncVectorDB();
+      res.json({ success: true, stats });
+    } catch (error) {
+      console.error('Vector DB Sync failed:', error);
+      res.status(500).json({ error: 'Sync failed: ' + error.message });
+    }
+  });
 
   const hasServerKey = Boolean(process.env.AI_API_KEY);
   if (!hasServerKey) {
@@ -16,6 +27,8 @@ module.exports = (authMiddleware) => {
     });
     return router;
   }
+
+
 
 
 

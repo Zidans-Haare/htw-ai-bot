@@ -105,6 +105,7 @@ model hochschuhl_abc {
   description   String?
   editor        String?
   active        Boolean?        @default(true)
+  access_level  String          @default("employee")
   archived      DateTime?
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
@@ -203,7 +204,8 @@ model users {
   id            String          @id @default(cuid())
   username      String          @unique
   password      String
-  role          String          @default("editor")
+  role          String          @default("employee")
+  permissions   Json            @default("[]")
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
   article_views article_views[]
@@ -218,6 +220,7 @@ model documents {
   filepath       String
   file_type      String
   description    String?
+  access_level   String          @default("employee")
   uploaded_at    DateTime        @default(now())
   created_at     DateTime        @default(now())
   updated_at     DateTime        @updatedAt

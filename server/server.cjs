@@ -18,6 +18,7 @@ const { execSync } = require('child_process');
 
 
 // --- Initializations ---
+// Force restart 2
 dotenv.config();
 
 const UPLOAD_LIMIT_MB = parseInt(process.env.UPLOAD_LIMIT_MB) || 10;
@@ -349,6 +350,52 @@ const requireRole = (role, insufficientPath) => async (req, res, next) => {
     return res.redirect(`/login/?redirect=${encodeURIComponent(originalUrl)}`);
   }
 };
+
+const requirePermission = (permission, insufficientPath) => async (req, res, next) => {
+  try {
+    const originalUrl = req.originalUrl || req.baseUrl || req.url;
+    const isDocsRoute = originalUrl.startsWith('/api/docs');
+    const isApiRoute = originalUrl.startsWith('/api/');
+    const redirectToLogin = () => res.redirect(`/login/?redirect=${encodeURIComponent(originalUrl)}`);
+
+    let token = req.cookies[ADMIN_COOKIE_NAME];
+    if (!token && ADMIN_TOKEN_PREFIX) {
+      const legacy = req.cookies[USER_COOKIE_NAME];
+      if (legacy && legacy.startsWith(ADMIN_TOKEN_PREFIX)) {
+        token = legacy;
+      }
+    }
+
+    if (!token) {
+      if (isApiRoute && !isDocsRoute) return res.status(401).json({ error: 'Session expired' });
+      return redirectToLogin();
+    }
+
+    const session = await auth.getSession(token);
+    if (!session) {
+      if (isApiRoute && !isDocsRoute) return res.status(401).json({ error: 'Session expired' });
+      return redirectToLogin();
+    }
+
+    const userPermissions = session.permissions || [];
+    // Super-admin bypass: 'admin' role has all permissions implicitly or we just check check
+    if (session.role === 'admin' || userPermissions.includes(permission)) {
+      req.session = session;
+      return next();
+    }
+
+    if (isApiRoute && !isDocsRoute) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    return res.redirect(insufficientPath);
+
+  } catch (err) {
+    console.error('Auth error:', err);
+    if (req.url.startsWith('/api/')) return res.status(401).json({ error: 'Session error' });
+    return res.redirect('/login/');
+  }
+};
+
 
 const protect = (req, res, next) => {
   // Allow access to login pages and insufficient permissions page

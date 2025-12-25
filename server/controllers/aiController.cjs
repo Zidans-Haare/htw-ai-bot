@@ -1,4 +1,5 @@
 const { HochschuhlABC, Questions, Images, Conversation, Message } = require('./db.cjs');
+const auth = require('./authController.cjs');
 const { getImageList } = require('../utils/imageProvider.js');
 const { estimateTokens, isWithinTokenLimit } = require('../utils/tokenizer');
 const { summarizeConversation } = require('../utils/summarizer');
@@ -51,6 +52,20 @@ function buildImageBaseUrl(req) {
     return null;
   }
   return `${protocol}://${host}/uploads/images/`;
+}
+
+const ACCESS_LEVEL_HIERARCHY = {
+  'admin': ['public', 'intern', 'employee', 'manager', 'admin'],
+  'manager': ['public', 'intern', 'employee', 'manager'],
+  'entwickler': ['public', 'intern', 'employee', 'manager', 'admin'], // Devs see all
+  'employee': ['public', 'intern', 'employee'],
+  'editor': ['public', 'intern', 'employee'], // Editors see same as employees by default? Or more?
+  'intern': ['public', 'intern'],
+  'public': ['public']
+};
+
+function getAllowedAccessLevels(role) {
+  return ACCESS_LEVEL_HIERARCHY[role] || ['public'];
 }
 
 // Removed runChatCompletion, using chatCompletion directly
@@ -277,8 +292,24 @@ async function streamChat(req, res) {
     }));
 
     let hochschulContent = '';
+
+    // Determine user role and allowed access levels
+    let userRole = 'public';
+    try {
+      const token = req.cookies[auth.ADMIN_SESSION_COOKIE] || req.cookies[auth.USER_SESSION_COOKIE];
+      if (token) {
+        const session = await auth.getSession(token);
+        if (session) userRole = session.role;
+      }
+    } catch (e) { console.error('Auth check in chat failed', e); }
+
+    const allowedLevels = getAllowedAccessLevels(userRole);
+    // Simple $in filter for Chroma (LangChain translates or Chroma accepts)
+    // For Weaviate this might need specific handling, but we start with generic object filter
+    const accessFilter = { access_level: { $in: allowedLevels } };
+
     if (vectorStore.store) {
-      const relevantDocs = await vectorStore.similaritySearch(prompt);
+      const relevantDocs = await vectorStore.similaritySearch(prompt, 3, accessFilter);
       hochschulContent = relevantDocs.map(doc => doc.pageContent).join('\n\n');
       if (vectorStore.graphData) {
         const graphContext = await vectorStore.getGraphSummary(prompt, vectorStore.graphData);

@@ -18,6 +18,7 @@ module.exports = (adminAuth) => {
             description: `**${question}**\n${answer}`,
             editor: req.user.username,
             active: true,
+            access_level: 'employee',
             archived: null
           }
         });
@@ -60,8 +61,8 @@ module.exports = (adminAuth) => {
         ];
       }
       const offset = parseInt(req.query.offset) || 0;
-       const articles = await HochschuhlABC.findMany({
-        select: { id: true, article: true, description: true },
+      const articles = await HochschuhlABC.findMany({
+        select: { id: true, article: true, description: true, access_level: true },
         where,
         orderBy: { updated_at: 'desc' },
         take: 100,
@@ -101,6 +102,7 @@ module.exports = (adminAuth) => {
           description,
           editor: req.user,
           active: active !== false,
+          access_level: req.body.access_level || 'employee',
           archived: null
         }
       });
@@ -133,6 +135,7 @@ module.exports = (adminAuth) => {
           description,
           editor: req.user,
           active: active !== false,
+          access_level: req.body.access_level || 'employee',
           archived: null
         }
       });

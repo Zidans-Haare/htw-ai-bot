@@ -22,6 +22,18 @@ export function initDocuments() {
                     <p id="document-file-name" class="text-sm text-gray-500 mt-2">Kein Dokument ausgewählt</p>
                 </div>
                 <textarea id="document-description-input" class="grow p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Dokument-Beschreibung..."></textarea>
+                <div class="custom-select-wrapper w-40">
+                  <select id="document-access-level-input" class="custom-select">
+                    <option value="public">Öffentlich</option>
+                    <option value="intern">Intern</option>
+                    <option value="employee" selected>Mitarbeiter</option>
+                    <option value="manager">Führungskraft</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <div class="custom-select-arrow">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  </div>
+                </div>
                 <button id="document-upload-button" class="btn-primary px-6 py-2 rounded-full">Hochladen</button>
             </div>
         </div>
@@ -36,6 +48,7 @@ export function initDocuments() {
     documentsList = document.getElementById('documents-list');
     const uploadInput = document.getElementById('document-upload-input');
     const descriptionInput = document.getElementById('document-description-input');
+    const accessLevelInput = document.getElementById('document-access-level-input');
     const uploadButton = document.getElementById('document-upload-button');
     const fileNameDisplay = document.getElementById('document-file-name');
 
@@ -47,7 +60,7 @@ export function initDocuments() {
         }
     });
 
-    uploadButton.addEventListener('click', () => handleDocumentUpload(uploadInput, descriptionInput));
+    uploadButton.addEventListener('click', () => handleDocumentUpload(uploadInput, descriptionInput, accessLevelInput));
 
     // Load documents when the view is shown
     const observer = new MutationObserver((mutations) => {
@@ -116,9 +129,9 @@ function renderDocuments(documents, append = false) {
                        <button class="copy-url-btn text-white hover:text-(--accent-color) transition-colors ml-4" data-url="/uploads/documents/${doc.filepath}" title="URL kopieren">
                           <i class="fas fa-copy fa-lg"></i>
                        </button>
-                      <button class="edit-document-btn text-white hover:text-yellow-400 transition-colors ml-4" data-id="${doc.id}" data-description="${doc.description || ''}" title="Beschreibung bearbeiten">
-                         <i class="fas fa-pencil-alt fa-lg"></i>
-                      </button>
+                       <button class="edit-document-btn text-white hover:text-yellow-400 transition-colors ml-4" data-id="${doc.id}" data-description="${doc.description || ''}" data-access-level="${doc.access_level || 'employee'}" title="Beschreibung bearbeiten">
+                          <i class="fas fa-pencil-alt fa-lg"></i>
+                       </button>
                       <button class="delete-document-btn text-white hover:text-red-500 transition-colors ml-4" data-id="${doc.id}" title="Löschen">
                          <i class="fas fa-trash-alt fa-lg"></i>
                       </button>
@@ -157,9 +170,10 @@ function renderDocuments(documents, append = false) {
     });
 }
 
-async function handleDocumentUpload(inputElement, descriptionElement) {
+async function handleDocumentUpload(inputElement, descriptionElement, accessLevelElement) {
     const file = inputElement.files[0];
     const description = descriptionElement.value.trim();
+    const accessLevel = accessLevelElement ? accessLevelElement.value : 'employee';
 
     if (!file) {
         alert('Noch kein Dokument gewählt.');
@@ -173,6 +187,7 @@ async function handleDocumentUpload(inputElement, descriptionElement) {
     const formData = new FormData();
     formData.append('document', file);
     formData.append('description', description);
+    formData.append('access_level', accessLevel);
 
     try {
         const response = await fetch('/api/admin/documents/upload', {
@@ -232,13 +247,16 @@ function handleEditDocument(event) {
     const button = event.currentTarget;
     const id = button.dataset.id;
     const currentDescription = button.dataset.description;
+    const currentAccessLevel = button.dataset.accessLevel || 'employee';
 
     const modal = document.getElementById('edit-document-modal');
     const descriptionInput = document.getElementById('edit-document-description-input');
+    const accessLevelInput = document.getElementById('edit-document-access-level');
     const cancelButton = document.getElementById('edit-document-cancel');
     const saveButton = document.getElementById('edit-document-save');
 
     descriptionInput.value = currentDescription;
+    if (accessLevelInput) accessLevelInput.value = currentAccessLevel;
 
     modal.classList.remove('hidden');
 
@@ -251,7 +269,9 @@ function handleEditDocument(event) {
 
     saveButton.onclick = async () => {
         const newDescription = descriptionInput.value.trim();
-        if (newDescription === currentDescription) {
+        const newAccessLevel = accessLevelInput ? accessLevelInput.value : 'employee';
+
+        if (newDescription === currentDescription && newAccessLevel === currentAccessLevel) {
             closeAndCleanup();
             return;
         }
@@ -262,7 +282,7 @@ function handleEditDocument(event) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ description: newDescription })
+                body: JSON.stringify({ description: newDescription, access_level: newAccessLevel })
             });
 
             if (!response.ok) {

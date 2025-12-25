@@ -1,88 +1,104 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Admin - Hochschul ABC Management</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Hochschul ABC Management</title>
 
-         <link rel="stylesheet" href="../styles/tailwind-backend.css">
-         <link rel="stylesheet" href="./admin.css">
+  <link rel="stylesheet" href="../styles/tailwind-backend.css">
+  <link rel="stylesheet" href="./admin.css">
 
-        <script type="module" src="./js/disable-analytics.js"></script>
+  <script type="module" src="./js/disable-analytics.js"></script>
 
-       <script defer type="module" src="./admin.js"></script>
-       <script type="module" src="./conversations.js"></script>
-   <link rel="icon" href="/assets/images/favicon_32.png">
-  
-  </head>
-  <body class="flex flex-col md:flex-row h-auto md:h-screen bg-(--bg-color) text-(--primary-text)">
+  <script defer type="module" src="./admin.js"></script>
+  <script type="module" src="./conversations.js"></script>
+  <link rel="icon" href="/assets/images/favicon_32.png">
+
+</head>
+
+<body class="flex flex-col md:flex-row h-auto md:h-screen bg-(--bg-color) text-(--primary-text)">
 
   <!-- Sidebar Navigation -->
-  <aside id="sidebar" class="hidden md:block w-64 shrink-0 bg-(--app-bg) p-6 flex flex-col border-r border-(--border-color) transition-all duration-300 relative z-auto">
+  <aside id="sidebar"
+    class="hidden md:block w-64 shrink-0 bg-(--app-bg) p-6 flex flex-col border-r border-(--border-color) transition-all duration-300 relative z-auto">
     <div class="flex justify-center items-center mb-8">
-        <img src="/assets/images/HTW.svg" alt="HTWD Logo" class="h-16">
+      <img src="/assets/images/HTW.svg" alt="HTWD Logo" class="h-16">
     </div>
     <nav id="main-menu" class="grow space-y-2">
-        <a href="#" id="btn-editor" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-            <i class="fa-solid fa-pen-to-square w-5 text-center"></i>
-            <span class="sidebar-text">Editor</span>
-        </a>
-        <a href="#" id="btn-questions" class="nav-link hover:bg-(--content-bg) flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-colors">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-circle-question w-5 text-center"></i>
-                <span class="sidebar-text">Fragen</span>
-            </div>
-            <span id="open-count" class="text-sm bg-red-500 text-white rounded-full px-2">0</span>
-        </a>
-        <a href="#" id="btn-images" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-            <i class="fa-solid fa-image w-5 text-center"></i>
-            <span class="sidebar-text">Bilder</span>
-        </a>
-        <a href="#" id="btn-documents" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-            <i class="fa-solid fa-file w-5 text-center"></i>
-            <span class="sidebar-text">Dokumente</span>
-        </a>
-        <a href="#" id="btn-archive" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-            <i class="fa-solid fa-box-archive w-5 text-center"></i>
-            <span class="sidebar-text">Archiv</span>
-        </a>
-        <a href="#" id="btn-feedback" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-            <i class="fa-solid fa-comment-dots w-5 text-center"></i>
-            <span class="sidebar-text">Feedback</span>
-        </a>
-        <a href="#" id="btn-conversations" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-            <i class="fa-solid fa-comments w-5 text-center"></i>
-            <span class="sidebar-text">Conversations</span>
-        </a>
+      <a href="#" id="btn-editor"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-pen-to-square w-5 text-center"></i>
+        <span class="sidebar-text">Editor</span>
+      </a>
+      <a href="#" id="btn-questions"
+        class="nav-link hover:bg-(--content-bg) flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-colors">
+        <div class="flex items-center space-x-3">
+          <i class="fa-solid fa-circle-question w-5 text-center"></i>
+          <span class="sidebar-text">Fragen</span>
+        </div>
+        <span id="open-count" class="text-sm bg-red-500 text-white rounded-full px-2">0</span>
+      </a>
+      <a href="#" id="btn-images"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-image w-5 text-center"></i>
+        <span class="sidebar-text">Bilder</span>
+      </a>
+      <a href="#" id="btn-documents"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-file w-5 text-center"></i>
+        <span class="sidebar-text">Dokumente</span>
+      </a>
+      <a href="#" id="btn-archive"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-box-archive w-5 text-center"></i>
+        <span class="sidebar-text">Archiv</span>
+      </a>
+      <a href="#" id="btn-feedback"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-comment-dots w-5 text-center"></i>
+        <span class="sidebar-text">Feedback</span>
+      </a>
+      <a href="#" id="btn-conversations"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-comments w-5 text-center"></i>
+        <span class="sidebar-text">Conversations</span>
+      </a>
 
-          <a href="#" id="btn-backup" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
-              <i class="fa-solid fa-save w-5 text-center"></i>
-              <span class="sidebar-text">Backup</span>
-          </a>
-          <a href="#" id="btn-stats" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-             <i class="fa-solid fa-chart-bar w-5 text-center"></i>
-             <span class="sidebar-text">Statistiken</span>
-         </a>
-          <a href="#" id="btn-mcp" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
-            <i class="fa-solid fa-server w-5 text-center"></i>
-            <span class="sidebar-text">MCP Servers</span>
-          </a>
-          <a href="#" id="btn-user" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
-            <i class="fa-solid fa-users w-5 text-center"></i>
-            <span class="sidebar-text">Benutzer</span>
-          </a>
+      <a href="#" id="btn-backup"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+        <i class="fa-solid fa-save w-5 text-center"></i>
+        <span class="sidebar-text">Backup</span>
+      </a>
+      <a href="#" id="btn-stats"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+        <i class="fa-solid fa-chart-bar w-5 text-center"></i>
+        <span class="sidebar-text">Statistiken</span>
+      </a>
+      <a href="#" id="btn-mcp"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+        <i class="fa-solid fa-server w-5 text-center"></i>
+        <span class="sidebar-text">MCP Servers</span>
+      </a>
+      <a href="#" id="btn-user"
+        class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+        <i class="fa-solid fa-users w-5 text-center"></i>
+        <span class="sidebar-text">Benutzer</span>
+      </a>
     </nav>
     <div class="mt-auto">
-        <div id="user-session-info" class="px-4 py-2 mb-2 text-center text-sm text-(--secondary-text) sidebar-text">
-            <!-- Session-Info wird hier per JS eingefügt -->
-        </div>
-        <a href="#" id="btn-logout" class="nav-link hover:bg-(--content-bg) flex items-center justify-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors border-t border-(--border-color)">
-            <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
-            <span class="sidebar-text">Logout</span>
-        </a>
-        <button id="sidebar-toggle" class="w-full mt-4 text-(--secondary-text) hover:text-(--primary-text) transition-colors">
-             <i id="sidebar-toggle-icon" class="fa-solid fa-chevron-left"></i>
-        </button>
+      <div id="user-session-info" class="px-4 py-2 mb-2 text-center text-sm text-(--secondary-text) sidebar-text">
+        <!-- Session-Info wird hier per JS eingefügt -->
+      </div>
+      <a href="#" id="btn-logout"
+        class="nav-link hover:bg-(--content-bg) flex items-center justify-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors border-t border-(--border-color)">
+        <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
+        <span class="sidebar-text">Logout</span>
+      </a>
+      <button id="sidebar-toggle"
+        class="w-full mt-4 text-(--secondary-text) hover:text-(--primary-text) transition-colors">
+        <i id="sidebar-toggle-icon" class="fa-solid fa-chevron-left"></i>
+      </button>
     </div>
   </aside>
 
@@ -95,166 +111,205 @@
         </button>
         <h1 class="ml-4 text-lg font-semibold">Admin Panel</h1>
       </div>
-      <div id="mobile-menu" class="hidden fixed inset-x-0 top-16 bottom-0 bg-(--app-bg) border border-(--border-color) z-40 flex flex-col overflow-y-auto">
+      <div id="mobile-menu"
+        class="hidden fixed inset-x-0 top-16 bottom-0 bg-(--app-bg) border border-(--border-color) z-40 flex flex-col overflow-y-auto">
         <div class="flex justify-center items-center mb-4 mt-4">
-            <img src="/assets/images/HTW.svg" alt="HTWD Logo" class="h-12">
+          <img src="/assets/images/HTW.svg" alt="HTWD Logo" class="h-12">
         </div>
         <nav id="mobile-main-menu" class="grow space-y-2 px-4 pb-4">
-            <a href="#" id="mobile-btn-editor" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                <i class="fa-solid fa-pen-to-square w-5 text-center"></i>
-                <span>Editor</span>
-            </a>
-            <a href="#" id="mobile-btn-questions" class="nav-link hover:bg-(--content-bg) flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-colors">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-circle-question w-5 text-center"></i>
-                    <span>Fragen</span>
-                </div>
-                <span id="mobile-open-count" class="text-sm bg-red-500 text-white rounded-full px-2">0</span>
-            </a>
-            <a href="#" id="mobile-btn-images" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                <i class="fa-solid fa-image w-5 text-center"></i>
-                <span>Bilder</span>
-            </a>
-            <a href="#" id="mobile-btn-documents" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                <i class="fa-solid fa-file w-5 text-center"></i>
-                <span>Dokumente</span>
-            </a>
-            <a href="#" id="mobile-btn-archive" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                <i class="fa-solid fa-box-archive w-5 text-center"></i>
-                <span>Archiv</span>
-            </a>
-            <a href="#" id="mobile-btn-feedback" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                <i class="fa-solid fa-comment-dots w-5 text-center"></i>
-                <span>Feedback</span>
-            </a>
-            <a href="#" id="mobile-btn-conversations" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                <i class="fa-solid fa-comments w-5 text-center"></i>
-                <span>Conversations</span>
-            </a>
+          <a href="#" id="mobile-btn-editor"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-pen-to-square w-5 text-center"></i>
+            <span>Editor</span>
+          </a>
+          <a href="#" id="mobile-btn-questions"
+            class="nav-link hover:bg-(--content-bg) flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-colors">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-circle-question w-5 text-center"></i>
+              <span>Fragen</span>
+            </div>
+            <span id="mobile-open-count" class="text-sm bg-red-500 text-white rounded-full px-2">0</span>
+          </a>
+          <a href="#" id="mobile-btn-images"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-image w-5 text-center"></i>
+            <span>Bilder</span>
+          </a>
+          <a href="#" id="mobile-btn-documents"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-file w-5 text-center"></i>
+            <span>Dokumente</span>
+          </a>
+          <a href="#" id="mobile-btn-archive"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-box-archive w-5 text-center"></i>
+            <span>Archiv</span>
+          </a>
+          <a href="#" id="mobile-btn-feedback"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-comment-dots w-5 text-center"></i>
+            <span>Feedback</span>
+          </a>
+          <a href="#" id="mobile-btn-conversations"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-comments w-5 text-center"></i>
+            <span>Conversations</span>
+          </a>
 
-              <a href="#" id="mobile-btn-backup" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
-                  <i class="fa-solid fa-save w-5 text-center"></i>
-                  <span>Backup</span>
-              </a>
-              <a href="#" id="mobile-btn-stats" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
-                 <i class="fa-solid fa-chart-bar w-5 text-center"></i>
-                 <span>Statistiken</span>
-             </a>
-              <a href="#" id="mobile-btn-mcp" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
-                <i class="fa-solid fa-server w-5 text-center"></i>
-                <span>MCP Servers</span>
-              </a>
-              <a href="#" id="mobile-btn-user" class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
-                <i class="fa-solid fa-users w-5 text-center"></i>
-                <span>Benutzer</span>
-              </a>
+          <a href="#" id="mobile-btn-backup"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+            <i class="fa-solid fa-save w-5 text-center"></i>
+            <span>Backup</span>
+          </a>
+          <a href="#" id="mobile-btn-stats"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-chart-bar w-5 text-center"></i>
+            <span>Statistiken</span>
+          </a>
+          <a href="#" id="mobile-btn-mcp"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+            <i class="fa-solid fa-server w-5 text-center"></i>
+            <span>MCP Servers</span>
+          </a>
+          <a href="#" id="mobile-btn-user"
+            class="nav-link hover:bg-(--content-bg) flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors hidden">
+            <i class="fa-solid fa-users w-5 text-center"></i>
+            <span>Benutzer</span>
+          </a>
         </nav>
         <div class="px-4 pb-4">
-            <div id="mobile-user-session-info" class="px-4 py-2 mb-2 text-center text-sm text-(--secondary-text)">
-                <!-- Session-Info wird hier per JS eingefügt -->
-            </div>
-            <a href="#" id="mobile-btn-logout" class="nav-link hover:bg-(--content-bg) flex items-center justify-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors border-t border-(--border-color)">
-                <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
-                <span>Logout</span>
-            </a>
+          <div id="mobile-user-session-info" class="px-4 py-2 mb-2 text-center text-sm text-(--secondary-text)">
+            <!-- Session-Info wird hier per JS eingefügt -->
+          </div>
+          <a href="#" id="mobile-btn-logout"
+            class="nav-link hover:bg-(--content-bg) flex items-center justify-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors border-t border-(--border-color)">
+            <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
+            <span>Logout</span>
+          </a>
         </div>
       </div>
     </div>
-     <!-- Editor View -->
-     <div id="editor-view" class="flex flex-col flex-1">
-        <!-- List View -->
-        <div id="editor-list-container" class="flex flex-col flex-1">
-          <div class="p-4 border-b border-(--border-color) flex justify-between items-center">
-            <h2 class="text-lg font-semibold">Artikel</h2>
-            <button id="add-heading" class="px-4 py-2 rounded-md btn-primary">
-              Neuer Artikel
-            </button>
+    <!-- Editor View -->
+    <div id="editor-view" class="flex flex-col flex-1">
+      <!-- List View -->
+      <div id="editor-list-container" class="flex flex-col flex-1">
+        <div class="p-4 border-b border-(--border-color) flex justify-between items-center">
+          <h2 class="text-lg font-semibold">Artikel</h2>
+          <button id="add-heading" class="px-4 py-2 rounded-md btn-primary">
+            Neuer Artikel
+          </button>
+        </div>
+        <!-- Search Field -->
+        <div class="p-4 border-b border-(--border-color)">
+          <input id="search" type="text" placeholder="Suchen..."
+            class="w-full px-3 py-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color) bg-white">
+        </div>
+        <!-- Articles List -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <ul id="article-list" class="space-y-2"></ul>
+        </div>
+      </div>
+      <!-- Edit View -->
+      <div id="editor-edit-container" class="hidden flex flex-col flex-1">
+        <div class="p-4 border-b border-(--border-color) flex items-center">
+          <button id="editor-back-btn" class="mr-4 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Back
+          </button>
+          <h2 class="text-lg font-semibold">Artikel bearbeiten</h2>
+        </div>
+        <div id="question-edit-banner"
+          class="hidden p-4 bg-blue-100 border-b border-blue-200 flex items-center justify-between">
+          <div>
+            <span class="font-semibold text-blue-800">Frage:</span>
+            <span id="question-edit-label" class="text-blue-800"></span>
+            <div id="question-edit-translation" class="text-sm mt-1" style="color: var(--primary-text); display: none;">
+            </div>
+            <div id="question-answered-in" class="text-sm mt-1" style="color: var(--primary-text); display: none;">
+            </div>
+            <input type="hidden" id="question-edit-id">
           </div>
-          <!-- Search Field -->
-          <div class="p-4 border-b border-(--border-color)">
-            <input
-              id="search"
-              type="text"
-              placeholder="Suchen..."
-              class="w-full px-3 py-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color) bg-white"
-            >
-       </div>
-          <!-- Articles List -->
-          <div class="flex-1 overflow-y-auto p-4">
-            <ul id="article-list" class="space-y-2"></ul>
+          <div class="flex items-center space-x-2">
+            <button id="cancel-edit-question" class="font-bold px-4 py-2 rounded-md"
+              style="background-color: transparent; color: cornflowerblue; border: 1px solid cornflowerblue;">Abbrechen</button>
+            <button id="mark-as-answered-btn" class="px-4 py-2 rounded-md btn-primary" disabled>Beantwortet</button>
           </div>
         </div>
-        <!-- Edit View -->
-        <div id="editor-edit-container" class="hidden flex flex-col flex-1">
-          <div class="p-4 border-b border-(--border-color) flex items-center">
-            <button id="editor-back-btn" class="mr-4 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm">
-              <i class="fas fa-arrow-left mr-1"></i>Back
-            </button>
-            <h2 class="text-lg font-semibold">Artikel bearbeiten</h2>
-          </div>
-          <div id="question-edit-banner" class="hidden p-4 bg-blue-100 border-b border-blue-200 flex items-center justify-between">
-            <div>
-              <span class="font-semibold text-blue-800">Frage:</span>
-              <span id="question-edit-label" class="text-blue-800"></span>
-              <div id="question-edit-translation" class="text-sm mt-1" style="color: var(--primary-text); display: none;"></div>
-              <div id="question-answered-in" class="text-sm mt-1" style="color: var(--primary-text); display: none;"></div>
-              <input type="hidden" id="question-edit-id">
-            </div>
-            <div class="flex items-center space-x-2">
-              <button id="cancel-edit-question" class="font-bold px-4 py-2 rounded-md" style="background-color: transparent; color: cornflowerblue; border: 1px solid cornflowerblue;">Abbrechen</button>
-              <button id="mark-as-answered-btn" class="px-4 py-2 rounded-md btn-primary" disabled>Beantwortet</button>
+        <div class="p-4 border-b border-(--border-color) flex space-x-4 items-center">
+          <input id="article-input"
+            class="p-2 border border-(--input-border) rounded flex-1 bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+            placeholder="Artikel">
+          <div class="custom-select-wrapper w-40">
+            <select id="article-access-level" class="custom-select">
+              <option value="public">Öffentlich</option>
+              <option value="intern">Intern</option>
+              <option value="employee" selected>Mitarbeiter</option>
+              <option value="manager">Führungskraft</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div class="custom-select-arrow">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
           </div>
-          <div class="p-4 border-b border-(--border-color) flex space-x-4 items-center">
-            <input id="article-input" class="p-2 border border-(--input-border) rounded flex-1 bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Artikel">
-            <span id="last-edited-by" class="p-2 text-(--secondary-text) text-sm text-right"></span>
-          </div>
-          <div id="editor" class="grow"></div>
-          <div class="p-4 border-t border-(--border-color) flex justify-between items-center">
-            <button id="delete-btn" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Löschen</button>
-            <div class="flex space-x-4 items-center">
-              <div id="question-context-actions" class="hidden items-center space-x-2">
-                <button id="test-ai-response" class="px-4 py-2 rounded-md text-white" style="background-color: green;">Speichern + Test</button>
-              </div>
-              <button id="save-btn" class="px-4 py-2 rounded-md btn-primary" disabled>Speichern</button>
+          <span id="last-edited-by" class="p-2 text-(--secondary-text) text-sm text-right"></span>
+        </div>
+        <div id="editor" class="grow"></div>
+        <div class="p-4 border-t border-(--border-color) flex justify-between items-center">
+          <button id="delete-btn"
+            class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Löschen</button>
+          <div class="flex space-x-4 items-center">
+            <div id="question-context-actions" class="hidden items-center space-x-2">
+              <button id="test-ai-response" class="px-4 py-2 rounded-md text-white"
+                style="background-color: green;">Speichern + Test</button>
             </div>
+            <button id="save-btn" class="px-4 py-2 rounded-md btn-primary" disabled>Speichern</button>
           </div>
         </div>
       </div>
-       </div>
-       <!-- Edit View -->
-       <div id="editor-edit-container" class="hidden flex flex-col flex-1">
-         <div class="p-4 border-b border-(--border-color) flex items-center">
-           <button id="editor-back-btn" class="mr-4 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm">
-             <i class="fas fa-arrow-left mr-1"></i>Back
-           </button>
-           <h2 class="text-lg font-semibold">Artikel bearbeiten</h2>
-         </div>
-         <div class="p-4 border-b border-(--border-color) flex space-x-4 items-center">
-           <input id="article-input" class="p-2 border border-(--input-border) rounded flex-1 bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Artikel">
-           <span id="last-edited-by" class="p-2 text-(--secondary-text) text-sm text-right"></span>
-         </div>
-         <div id="editor" class="grow"></div>
-         <div class="p-4 border-t border-(--border-color) flex justify-between items-center">
-           <button id="delete-btn" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Löschen</button>
-           <div class="flex space-x-4 items-center">
-             <div id="question-context-actions" class="hidden items-center space-x-2">
-               <button id="test-ai-response" class="px-4 py-2 rounded-md text-white" style="background-color: green;">Speichern + Test</button>
-             </div>
-             <button id="save-btn" class="px-4 py-2 rounded-md btn-primary" disabled>Speichern</button>
-           </div>
-         </div>
-       </div>
+    </div>
+    </div>
+    <!-- Edit View -->
+    <div id="editor-edit-container" class="hidden flex flex-col flex-1">
+      <div class="p-4 border-b border-(--border-color) flex items-center">
+        <button id="editor-back-btn" class="mr-4 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm">
+          <i class="fas fa-arrow-left mr-1"></i>Back
+        </button>
+        <h2 class="text-lg font-semibold">Artikel bearbeiten</h2>
       </div>
-     <!-- Question Management View -->
+      <div class="p-4 border-b border-(--border-color) flex space-x-4 items-center">
+        <input id="article-input"
+          class="p-2 border border-(--input-border) rounded flex-1 bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+          placeholder="Artikel">
+        <span id="last-edited-by" class="p-2 text-(--secondary-text) text-sm text-right"></span>
+      </div>
+      <div id="editor" class="grow"></div>
+      <div class="p-4 border-t border-(--border-color) flex justify-between items-center">
+        <button id="delete-btn"
+          class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Löschen</button>
+        <div class="flex space-x-4 items-center">
+          <div id="question-context-actions" class="hidden items-center space-x-2">
+            <button id="test-ai-response" class="px-4 py-2 rounded-md text-white"
+              style="background-color: green;">Speichern + Test</button>
+          </div>
+          <button id="save-btn" class="px-4 py-2 rounded-md btn-primary" disabled>Speichern</button>
+        </div>
+      </div>
+    </div>
+    </div>
+    <!-- Question Management View -->
     <div id="questions-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
-      <input id="question-search" class="p-2 border border-(--input-border) rounded-md mb-2 w-full max-w-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Suche...">
+      <input id="question-search"
+        class="p-2 border border-(--input-border) rounded-md mb-2 w-full max-w-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+        placeholder="Suche...">
       <div class="mb-4 space-x-2">
         <button id="tab-open" class="px-4 py-2 rounded-md btn-primary">Offene Fragen</button>
         <button id="tab-answered" class="px-4 py-2 rounded-md btn-secondary">Beantwortete Fragen</button>
       </div>
       <div class="mb-2">
-        <button id="delete-selected" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Ausgewählte löschen</button>
+        <button id="delete-selected"
+          class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Ausgewählte
+          löschen</button>
       </div>
       <div id="open-list" class="space-y-4"></div>
       <div id="answered-list" class="space-y-4 hidden"></div>
@@ -262,16 +317,20 @@
     <!-- Archive View -->
     <div id="archive-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
       <div class="flex mb-2 space-x-4">
-        <input id="archive-search" class="flex-1 p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Suche...">
+        <input id="archive-search"
+          class="flex-1 p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+          placeholder="Suche...">
         <div class="custom-select-wrapper">
-            <select id="archive-sort" class="custom-select">
-              <option value="newest">Neueste</option>
-              <option value="oldest">Älteste</option>
-              <option value="editor">Geändert von</option>
-            </select>
-            <div class="custom-select-arrow">
-                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
+          <select id="archive-sort" class="custom-select">
+            <option value="newest">Neueste</option>
+            <option value="oldest">Älteste</option>
+            <option value="editor">Geändert von</option>
+          </select>
+          <div class="custom-select-arrow">
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </div>
         </div>
       </div>
       <div id="archive-list" class="space-y-4"></div>
@@ -295,196 +354,290 @@
         <!-- Details will be rendered here by JS -->
       </div>
     </div>
-     <!-- Conversations View -->
-     <div id="conversations-view" class="flex flex-col flex-1 hidden overflow-hidden">
-       <!-- List View -->
-       <div id="conversations-list-container" class="flex flex-col flex-1 overflow-hidden">
-         <div class="p-4 border-b border-(--border-color)">
-             <h2 class="text-lg font-semibold">Conversations</h2>
-         </div>
-         <div id="conversation-filter-container" class="p-2 border-b border-(--border-color) flex flex-wrap gap-2">
-             <!-- Filter buttons will be added here by JS -->
-         </div>
-         <div id="conversations-list" class="flex-1 overflow-y-auto p-4 space-y-2">
-             <!-- Conversation list will be populated here -->
-         </div>
-       </div>
-       <!-- Detail View -->
-       <div id="conversations-detail-container" class="hidden flex flex-col flex-1 overflow-hidden">
-         <div class="p-4 border-b border-(--border-color) flex items-center">
-           <button id="conversations-back-btn" class="mr-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm">
-             <i class="fas fa-arrow-left mr-1"></i>Back
-           </button>
-           <h2 id="conversation-detail-title" class="text-lg font-semibold">Conversation Details</h2>
-         </div>
-         <div id="conversation-detail-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
-             <!-- Messages will be populated here -->
-         </div>
-       </div>
-     </div>
-      <!-- Stats View -->
-      <div id="stats-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
-        <div id="stats-content"></div>
-      </div>
-      <!-- Backup View -->
-      <div id="backup-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
-        <div class="flex space-x-4 mb-4">
-          <button id="create-backup-btn" class="px-4 py-2 btn-primary rounded-md">Create New Backup</button>
-          <input type="file" id="upload-backup-input" accept=".zip" class="hidden">
-          <button id="upload-backup-btn" class="px-4 py-2 btn-secondary rounded-md">Upload Backup File</button>
+    <!-- Conversations View -->
+    <div id="conversations-view" class="flex flex-col flex-1 hidden overflow-hidden">
+      <!-- List View -->
+      <div id="conversations-list-container" class="flex flex-col flex-1 overflow-hidden">
+        <div class="p-4 border-b border-(--border-color)">
+          <h2 class="text-lg font-semibold">Conversations</h2>
         </div>
-        <div id="backup-create" class="hidden space-y-4">
-          <h3 class="text-lg font-semibold">Select Data to Backup</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <label><input type="checkbox" id="backup-users"> Users</label>
-            <label><input type="checkbox" id="backup-artikels"> Artikels</label>
-            <label><input type="checkbox" id="backup-fragen"> Fragen</label>
-            <label><input type="checkbox" id="backup-conversations"> Conversations</label>
-            <label><input type="checkbox" id="backup-dokumente"> Dokumente</label>
-            <label><input type="checkbox" id="backup-bilder"> Bilder</label>
-            <label><input type="checkbox" id="backup-feedback"> Feedback</label>
-            <label><input type="checkbox" id="backup-dashboard"> Dashboard</label>
-          </div>
-          <button id="start-backup-btn" class="px-4 py-2 btn-primary rounded-md">Start Backup</button>
+        <div id="conversation-filter-container" class="p-2 border-b border-(--border-color) flex flex-wrap gap-2">
+          <!-- Filter buttons will be added here by JS -->
         </div>
-        <div id="backup-import" class="hidden space-y-4">
-          <h3 class="text-lg font-semibold">Full Restore (Replaces All Data)</h3>
-          <p class="text-sm text-gray-600">This will delete all existing data and restore from the backup.</p>
-          <div id="import-options" class="grid grid-cols-2 gap-4">
-            <!-- Checkboxes will be added here -->
-          </div>
-          <div class="flex space-x-2">
-            <button id="select-all-btn" class="px-4 py-2 bg-gray-500 text-white rounded-md">Select All</button>
-            <button id="start-import-btn" class="px-4 py-2 btn-primary rounded-md">Start Full Restore</button>
-          </div>
-        </div>
-        <div id="backup-list" class="space-y-2">
-          <!-- Backups will be listed here -->
+        <div id="conversations-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+          <!-- Conversation list will be populated here -->
         </div>
       </div>
-       <!-- MCP Servers View -->
-       <div id="mcp-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
-         <!-- MCP Servers content will be added here -->
-       </div>
-       <!-- User Management View -->
-     <div id="user-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
+      <!-- Detail View -->
+      <div id="conversations-detail-container" class="hidden flex flex-col flex-1 overflow-hidden">
+        <div class="p-4 border-b border-(--border-color) flex items-center">
+          <button id="conversations-back-btn" class="mr-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Back
+          </button>
+          <h2 id="conversation-detail-title" class="text-lg font-semibold">Conversation Details</h2>
+        </div>
+        <div id="conversation-detail-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+          <!-- Messages will be populated here -->
+        </div>
+      </div>
+    </div>
+    <!-- Stats View -->
+    <div id="stats-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
+      <div id="stats-content"></div>
+    </div>
+    <!-- Backup View -->
+    <div id="backup-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
+      <div class="flex space-x-4 mb-4">
+        <button id="create-backup-btn" class="px-4 py-2 btn-primary rounded-md">Create New Backup</button>
+        <input type="file" id="upload-backup-input" accept=".zip" class="hidden">
+        <button id="upload-backup-btn" class="px-4 py-2 btn-secondary rounded-md">Upload Backup File</button>
+      </div>
+      <div id="backup-create" class="hidden space-y-4">
+        <h3 class="text-lg font-semibold">Select Data to Backup</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <label><input type="checkbox" id="backup-users"> Users</label>
+          <label><input type="checkbox" id="backup-artikels"> Artikels</label>
+          <label><input type="checkbox" id="backup-fragen"> Fragen</label>
+          <label><input type="checkbox" id="backup-conversations"> Conversations</label>
+          <label><input type="checkbox" id="backup-dokumente"> Dokumente</label>
+          <label><input type="checkbox" id="backup-bilder"> Bilder</label>
+          <label><input type="checkbox" id="backup-feedback"> Feedback</label>
+          <label><input type="checkbox" id="backup-dashboard"> Dashboard</label>
+        </div>
+        <button id="start-backup-btn" class="px-4 py-2 btn-primary rounded-md">Start Backup</button>
+      </div>
+      <div id="backup-import" class="hidden space-y-4">
+        <h3 class="text-lg font-semibold">Full Restore (Replaces All Data)</h3>
+        <p class="text-sm text-gray-600">This will delete all existing data and restore from the backup.</p>
+        <div id="import-options" class="grid grid-cols-2 gap-4">
+          <!-- Checkboxes will be added here -->
+        </div>
+        <div class="flex space-x-2">
+          <button id="select-all-btn" class="px-4 py-2 bg-gray-500 text-white rounded-md">Select All</button>
+          <button id="start-import-btn" class="px-4 py-2 btn-primary rounded-md">Start Full Restore</button>
+        </div>
+      </div>
+      <div id="backup-list" class="space-y-2">
+        <!-- Backups will be listed here -->
+      </div>
+    </div>
+    <!-- MCP Servers View -->
+    <div id="mcp-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
+      <!-- MCP Servers content will be added here -->
+    </div>
+    <!-- User Management View -->
+    <div id="user-view" class="flex flex-col flex-1 hidden p-6 space-y-4 overflow-y-auto">
       <div id="user-admin" class="p-6 space-y-4 border border-(--border-color) rounded-lg">
         <h2 class="font-semibold text-lg">Neuen Benutzer anlegen</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input id="new-user" class="border p-2 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Username">
-            <input id="new-pass" type="password" class="border p-2 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Passwort">
-            <div class="custom-select-wrapper">
-                <select id="new-role" class="custom-select">
-                  <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                  <option value="entwickler">Entwickler</option>
-                </select>
-                <div class="custom-select-arrow">
-                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                </div>
+          <input id="new-user"
+            class="border p-2 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+            placeholder="Username">
+          <input id="new-pass" type="password"
+            class="border p-2 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+            placeholder="Passwort">
+          <div class="custom-select-wrapper">
+            <select id="new-role" class="custom-select">
+              <option value="editor">Editor</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+              <option value="entwickler">Entwickler</option>
+              <option value="intern">Praktikant</option>
+            </select>
+            <div class="custom-select-arrow">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
+          </div>
         </div>
         <button id="create-user" class="px-4 py-2 btn-primary rounded-md">Anlegen</button>
         <p class="text-sm text-(--secondary-text)">Das Anlegen kann bis zu 1 Minute dauern.</p>
       </div>
       <div class="p-6 space-y-4 border border-(--border-color) rounded-lg">
-          <h2 class="font-semibold text-lg">Benutzerliste</h2>
-          <div id="user-list" class="space-y-2"></div>
+        <h2 class="font-semibold text-lg">Benutzerliste</h2>
+        <div id="user-list" class="space-y-2"></div>
       </div>
     </div>
 
     <!-- Change Password Modal -->
-    <div id="change-password-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-            <h3 class="text-lg font-medium mb-2">Passwort ändern</h3>
-            <p class="mb-4 text-(--secondary-text)">Neues Passwort für <strong id="change-password-username"></strong>:</p>
-            <input id="new-password-input" type="password" class="border p-2 w-full mb-4 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Neues Passwort">
-            <div class="flex justify-end space-x-2">
-                <button id="change-password-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
-                <button id="change-password-confirm" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
-            </div>
+    <div id="change-password-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+        <h3 class="text-lg font-medium mb-2">Passwort ändern</h3>
+        <p class="mb-4 text-(--secondary-text)">Neues Passwort für <strong id="change-password-username"></strong>:</p>
+        <input id="new-password-input" type="password"
+          class="border p-2 w-full mb-4 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+          placeholder="Neues Passwort">
+        <div class="flex justify-end space-x-2">
+          <button id="change-password-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
+          <button id="change-password-confirm" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
         </div>
+      </div>
     </div>
 
     <!-- Remove User Modal -->
-    <div id="remove-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-            <h3 class="text-lg font-medium mb-2">Benutzer löschen</h3>
-            <p class="mb-4 text-(--secondary-text)">
-                Diese Aktion kann nicht rückgängig gemacht werden. Um den Benutzer <strong id="remove-user-username"></strong> zu löschen, geben Sie bitte den Benutzernamen ein.
-            </p>
-            <input id="remove-user-confirm-input" type="text" class="border p-2 w-full mb-4 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500" placeholder="Benutzernamen eingeben...">
-            <div class="flex justify-end space-x-2">
-                <button id="remove-user-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
-                <button id="remove-user-confirm" class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Endgültig löschen</button>
-            </div>
+    <div id="remove-user-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+        <h3 class="text-lg font-medium mb-2">Benutzer löschen</h3>
+        <p class="mb-4 text-(--secondary-text)">
+          Diese Aktion kann nicht rückgängig gemacht werden. Um den Benutzer <strong id="remove-user-username"></strong>
+          zu löschen, geben Sie bitte den Benutzernamen ein.
+        </p>
+        <input id="remove-user-confirm-input" type="text"
+          class="border p-2 w-full mb-4 rounded-md border-(--input-border) focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
+          placeholder="Benutzernamen eingeben...">
+        <div class="flex justify-end space-x-2">
+          <button id="remove-user-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
+          <button id="remove-user-confirm"
+            class="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled>Endgültig löschen</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+        <h3 class="text-lg font-medium mb-4">Benutzer bearbeiten</h3>
+        <p class="mb-4 text-(--secondary-text)">Benutzer: <strong id="edit-user-username"></strong></p>
+        <input type="hidden" id="edit-user-id">
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Rolle</label>
+          <div class="custom-select-wrapper">
+            <select id="edit-user-role" class="custom-select w-full">
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+              <option value="editor">Editor (Standard)</option>
+              <option value="entwickler">Entwickler</option>
+              <option value="intern">Praktikant</option>
+            </select>
+            <div class="custom-select-arrow">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Berechtigungen (Keys)</label>
+          <div class="space-y-2 max-h-40 overflow-y-auto border p-2 rounded" id="edit-user-permissions-list">
+            <!-- Checkboxes generated by JS -->
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" value="can_delete_users"> <span>User Löschen</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" value="can_view_stats"> <span>Statistiken sehen</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" value="can_manage_backups"> <span>Backups verwalten</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2">
+          <button id="edit-user-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
+          <button id="edit-user-save" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
+        </div>
+      </div>
     </div>
 
 
 
     <!-- AI Response Modal -->
-    <div id="ai-response-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
-            <h3 class="text-lg font-medium mb-4">AI-Antwort-Test</h3>
-            <div class="space-y-4">
-                <div>
-                    <h4 class="font-semibold">Frage (Prompt):</h4>
-                    <p id="ai-prompt" class="p-2 bg-gray-100 rounded-md"></p>
-                </div>
-                <div>
-                    <h4 class="font-semibold">Antwort von der AI:</h4>
-                    <div id="ai-response" class="p-2 bg-gray-100 rounded-md h-64 overflow-y-auto"></div>
-                </div>
-            </div>
-            <div class="flex justify-end mt-6">
-                <button id="ai-response-close" class="px-4 py-2 rounded-md btn-secondary">Schließen</button>
-            </div>
+    <div id="ai-response-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
+        <h3 class="text-lg font-medium mb-4">AI-Antwort-Test</h3>
+        <div class="space-y-4">
+          <div>
+            <h4 class="font-semibold">Frage (Prompt):</h4>
+            <p id="ai-prompt" class="p-2 bg-gray-100 rounded-md"></p>
+          </div>
+          <div>
+            <h4 class="font-semibold">Antwort von der AI:</h4>
+            <div id="ai-response" class="p-2 bg-gray-100 rounded-md h-64 overflow-y-auto"></div>
+          </div>
         </div>
+        <div class="flex justify-end mt-6">
+          <button id="ai-response-close" class="px-4 py-2 rounded-md btn-secondary">Schließen</button>
+        </div>
+      </div>
     </div>
 
     <!-- AI Check Modal -->
     <div id="ai-check-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl">
-            <h3 class="text-lg font-medium mb-4">✨ AI Analyse</h3>
-            <div id="ai-check-response" class="p-4 bg-gray-100 rounded-md h-96 overflow-y-auto">
-                <div id="ai-check-loader" class="text-center hidden">
-                    <i class="fas fa-spinner fa-spin text-4xl text-(--primary-text) mb-4"></i>
-                    <p class="text-(--secondary-text)">Die AI-Analyse läuft. Geschätzte verbleibende Zeit: <span id="ai-timer">60</span> Sekunden...</p>
-                </div>
-                <div id="ai-check-results"></div>
-            </div>
-            <div class="flex justify-end mt-6">
-                <button id="ai-check-close" class="px-4 py-2 rounded-md btn-secondary">Schließen</button>
-            </div>
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl">
+        <h3 class="text-lg font-medium mb-4">✨ AI Analyse</h3>
+        <div id="ai-check-response" class="p-4 bg-gray-100 rounded-md h-96 overflow-y-auto">
+          <div id="ai-check-loader" class="text-center hidden">
+            <i class="fas fa-spinner fa-spin text-4xl text-(--primary-text) mb-4"></i>
+            <p class="text-(--secondary-text)">Die AI-Analyse läuft. Geschätzte verbleibende Zeit: <span
+                id="ai-timer">60</span> Sekunden...</p>
+          </div>
+          <div id="ai-check-results"></div>
         </div>
+        <div class="flex justify-end mt-6">
+          <button id="ai-check-close" class="px-4 py-2 rounded-md btn-secondary">Schließen</button>
+        </div>
+      </div>
     </div>
 
     <!-- Edit Image Description Modal -->
-    <div id="edit-image-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
-            <h3 class="text-lg font-medium mb-4">Bildbeschreibung bearbeiten</h3>
-            <img id="edit-image-preview" src="" alt="Vorschau" class="w-full h-64 object-contain mb-4 rounded-md bg-gray-100">
-            <input id="edit-image-source-input" class="w-full p-2 mb-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" placeholder="Quelle (Pflichtfeld)...">
-            <textarea id="edit-image-description-input" class="w-full p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" rows="4"></textarea>
-            <div class="flex justify-end space-x-2 mt-4">
-                <button id="edit-image-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
-                <button id="edit-image-save" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
-            </div>
+    <div id="edit-image-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+        <h3 class="text-lg font-medium mb-4">Bildbeschreibung bearbeiten</h3>
+        <img id="edit-image-preview" src="" alt="Vorschau"
+          class="w-full h-64 object-contain mb-4 rounded-md bg-gray-100">
+        <input id="edit-image-source-input"
+          class="w-full p-2 mb-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+          placeholder="Quelle (Pflichtfeld)...">
+        <textarea id="edit-image-description-input"
+          class="w-full p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+          rows="4"></textarea>
+        <div class="flex justify-end space-x-2 mt-4">
+          <button id="edit-image-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
+          <button id="edit-image-save" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
         </div>
+      </div>
     </div>
 
     <!-- Edit Document Description Modal -->
-    <div id="edit-document-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
-            <h3 class="text-lg font-medium mb-4">Dokument-Beschreibung bearbeiten</h3>
-            <textarea id="edit-document-description-input" class="w-full p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)" rows="4"></textarea>
-            <div class="flex justify-end space-x-2 mt-4">
-                <button id="edit-document-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
-                <button id="edit-document-save" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
+    <div id="edit-document-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+        <h3 class="text-lg font-medium mb-4">Dokument-Beschreibung bearbeiten</h3>
+        <textarea id="edit-document-description-input"
+          class="w-full p-2 border border-(--input-border) rounded-md focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-(--accent-color)"
+          rows="4"></textarea>
+        <div class="mt-4">
+          <label class="block text-sm font-medium mb-1">Zugriffsstufe</label>
+          <div class="custom-select-wrapper w-full">
+            <select id="edit-document-access-level" class="custom-select">
+              <option value="public">Öffentlich</option>
+              <option value="intern">Intern</option>
+              <option value="employee" selected>Mitarbeiter</option>
+              <option value="manager">Führungskraft</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div class="custom-select-arrow">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
+          </div>
         </div>
+        <div class="flex justify-end space-x-2 mt-4">
+          <button id="edit-document-cancel" class="px-4 py-2 rounded-md btn-secondary">Abbrechen</button>
+          <button id="edit-document-save" class="px-4 py-2 rounded-md btn-primary">Speichern</button>
+        </div>
+      </div>
     </div>
   </main>
 </body>
+
 </html>
