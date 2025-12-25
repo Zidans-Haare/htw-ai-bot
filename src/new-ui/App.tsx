@@ -167,11 +167,11 @@ const App: React.FC = () => {
         profilePreferences: user?.profile?.mensaPreferences
       };
 
-      const { text: aiText, conversationId: serverConversationId } = await gemini.generateResponse(
+      const { text: aiText, conversationId: serverConversationId, images } = await gemini.generateResponse(
         content,
         chatContext,
         targetChatId,
-        settings.thinkingMode,
+        settings,
         userMetadata
       );
 
@@ -180,7 +180,8 @@ const App: React.FC = () => {
         role: 'assistant',
         content: aiText,
         timestamp: Date.now(),
-        isThinking: settings.thinkingMode
+        isThinking: settings.thinkingMode,
+        images: images
       };
 
       if (serverConversationId && serverConversationId !== targetChatId) {
@@ -282,7 +283,7 @@ const App: React.FC = () => {
   const currentChat = chats.find(c => c.id === currentChatId);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="fixed inset-0 w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div

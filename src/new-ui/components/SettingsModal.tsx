@@ -306,16 +306,21 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
                             </span>
                             <input
                               className="w-full rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 pl-11 pr-5 py-3 text-slate-600 dark:text-slate-400 font-mono text-sm focus:border-slate-400 focus:outline-none focus:ring-0 shadow-inner"
-                              readOnly
                               type="password"
-                              value="sk-8j29d**********************9k20s"
+                              placeholder="sk-..."
+                              value={localSettings.apiKey || ''}
+                              onChange={(e) => update('apiKey', e.target.value)}
                             />
                           </div>
+                          {/* 
                           <button className="shrink-0 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95">
-                            Configure Key
-                          </button>
+                            Validate
+                          </button> 
+                          */}
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 font-medium italic">Key last authenticated: 4 minutes ago</p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-medium italic">
+                          {localSettings.apiKey ? 'Key configured locally' : 'Using server-side environment key'}
+                        </p>
                       </div>
 
                       <div className="h-px w-full bg-slate-100 dark:bg-slate-700"></div>

@@ -2,6 +2,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatSession, Message, AppSettings } from '../types';
 import { INITIAL_PROMPTS } from '../constants';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import { suggestionService } from '../services/suggestionService';
 
 interface Props {
   chat?: ChatSession;
@@ -20,6 +23,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
   const [searchQuery, setSearchQuery] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [suggestions, setSuggestions] = useState<{ id: string, title: string, desc: string, icon: string }[]>([]);
 
   // Typewriter effect state
   const [displayedText, setDisplayedText] = useState('');
@@ -52,12 +56,31 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
   }, [displayedText, isDeleting, wordIndex]);
 
   useEffect(() => {
+    const loadPrompts = async () => {
+      const fetched = await suggestionService.getSuggestions();
+      if (fetched && fetched.length > 0) {
+        // Map backend data to UI format, limit to 3
+        const mapped = fetched.slice(0, 3).map((item, idx) => ({
+          id: `dyn_${idx}`,
+          title: item.article,
+          desc: item.description,
+          icon: ['school', 'menu_book', 'info', 'help', 'lightbulb'][idx % 5] // Rotate icons
+        }));
+        setSuggestions(mapped);
+      } else {
+        setSuggestions(INITIAL_PROMPTS);
+      }
+    };
+    loadPrompts();
+  }, []);
+
+  useEffect(() => {
     if (settings.autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [chat?.messages, isLoading, settings.autoScroll]);
 
-  const filteredMessages = chat?.messages.filter(m => 
+  const filteredMessages = chat?.messages.filter(m =>
     m.content.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
@@ -89,7 +112,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
           <button onClick={onOpenMenu} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors shrink-0">
             <span className="material-symbols-outlined">menu</span>
           </button>
-          
+
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[120px] sm:max-w-[300px] md:max-w-[400px]">
@@ -109,9 +132,9 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
         <div className="flex items-center gap-1 shrink-0">
           {isSearchOpen ? (
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-1 animate-fade-in-up border border-slate-200 dark:border-slate-700">
-              <input 
+              <input
                 autoFocus
-                placeholder="Find..." 
+                placeholder="Find..."
                 className="bg-transparent border-none text-[11px] focus:ring-0 w-24 md:w-48 text-slate-700 dark:text-white"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -126,11 +149,11 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><span className="material-symbols-outlined">more_vert</span></button>
             {isMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in-up">
-                <button onClick={() => { if(chat) onToggleFavorite(chat.id); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
+                <button onClick={() => { if (chat) onToggleFavorite(chat.id); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
                   <span className="material-symbols-outlined text-[18px]">{chat?.isFavorite ? 'push_pin' : 'push_pin'}</span>
                   {chat?.isFavorite ? 'Unpin thread' : 'Pin thread'}
                 </button>
-                <button onClick={() => { if(chat) onDeleteChat(chat.id); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors">
+                <button onClick={() => { if (chat) onDeleteChat(chat.id); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors">
                   <span className="material-symbols-outlined text-[18px]">delete</span>
                   Delete thread
                 </button>
@@ -148,12 +171,13 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
               <h1 className="text-2xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 md:mb-6">
                 Nexus <span className="text-slate-400 min-w-[140px] md:min-w-[200px] inline-block">{displayedText}<span className="animate-pulse">|</span></span>
               </h1>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full mt-6 md:mt-10">
-                {INITIAL_PROMPTS.map(p => (
-                  <button key={p.id} onClick={() => onSendMessage(p.title)} className="p-4 md:p-6 text-left glass-panel rounded-2xl hover:translate-y-[-4px] transition-all border border-slate-100 dark:border-slate-800 shadow-sm">
+                {(suggestions.length > 0 ? suggestions : INITIAL_PROMPTS).map(p => (
+                  <button key={p.id} onClick={() => onSendMessage(p.desc || p.title)} className="p-4 md:p-6 text-left glass-panel rounded-2xl hover:translate-y-[-4px] transition-all border border-slate-100 dark:border-slate-800 shadow-sm">
                     <span className="material-symbols-outlined mb-2 md:mb-4 text-slate-500 dark:text-slate-400">{p.icon}</span>
                     <h3 className="font-bold text-xs md:text-sm mb-1">{p.title}</h3>
-                    <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed">{p.desc}</p>
+                    <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed line-clamp-2">{p.desc}</p>
                   </button>
                 ))}
               </div>
@@ -172,7 +196,28 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
                       <span className="material-symbols-outlined text-[10px] md:text-[12px]">verified</span> Reasoned Output
                     </div>
                   )}
-                  <p className="text-[13px] md:text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+
+                  {/* Markdown Content */}
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none leading-relaxed text-[13px] md:text-sm break-words"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content) as string) }}
+                  />
+
+                  {/* Image Gallery */}
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {msg.images.map((img, idx) => (
+                        <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                          <img
+                            src={img.url}
+                            alt={img.description || img.filename}
+                            className="w-full h-32 object-cover transition-transform group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))
@@ -184,7 +229,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
       {/* Input - Sticky Bottom with constrained padding */}
       <div className="px-4 pb-4 pt-2 md:pb-8 max-w-[850px] mx-auto w-full shrink-0">
         <div className={`flex items-end bg-white dark:bg-slate-900 border rounded-[2rem] p-1.5 md:p-2 pl-4 md:pl-5 shadow-2xl transition-all duration-300 ${settings.thinkingMode ? 'border-indigo-400 ring-4 ring-indigo-50 dark:ring-indigo-900/20' : 'border-slate-200 dark:border-slate-800 focus-within:border-slate-400'}`}>
-          <textarea 
+          <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -193,14 +238,14 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             className="flex-1 bg-transparent border-none focus:ring-0 text-[13px] md:text-sm py-2.5 md:py-3 resize-none max-h-32 md:max-h-40 text-slate-800 dark:text-white"
           />
           <div className="flex items-center gap-1 pr-1 pb-1">
-            <button 
+            <button
               onClick={() => onToggleThinking(!settings.thinkingMode)}
               className={`p-2 md:p-2.5 rounded-xl transition-all active:scale-90 ${settings.thinkingMode ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               title="Toggle Thinking Mode"
             >
               <span className={`material-symbols-outlined text-[18px] md:text-[20px] ${settings.thinkingMode ? 'animate-pulse' : ''}`}>psychology</span>
             </button>
-            <button 
+            <button
               onClick={handleSend}
               disabled={!inputValue.trim() || isLoading}
               className={`size-9 md:size-11 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-90 ${settings.thinkingMode ? 'bg-indigo-600' : 'bg-slate-900 dark:bg-white'} text-white dark:text-slate-900 disabled:opacity-50`}

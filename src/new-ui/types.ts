@@ -23,6 +23,7 @@ export interface Message {
   content: string;
   timestamp: number;
   isThinking?: boolean;
+  images?: { url: string; description: string; filename: string }[];
 }
 
 export interface ChatSession {
@@ -50,4 +51,5 @@ export interface AppSettings {
   maxTokens: number;
   thinkingMode: boolean;
   workspacePrefs: string[];
+  apiKey?: string;
 }

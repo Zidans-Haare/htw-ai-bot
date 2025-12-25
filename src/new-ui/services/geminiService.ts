@@ -4,7 +4,7 @@ export class GeminiService {
     prompt: string,
     history: { role: 'user' | 'model'; parts: { text: string }[] }[],
     conversationId: string | null = null,
-    isThinking: boolean = false,
+    settings?: any, // Using any to avoid circular dependency or import AppSettings
     userMetadata?: {
       anonymousUserId?: string;
       userDisplayName?: string;
@@ -12,19 +12,27 @@ export class GeminiService {
     }
   ) {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+
+      if (settings?.apiKey) {
+        headers['x-user-api-key'] = settings.apiKey;
+      }
+
       // Bridge to existing HTW Bot Backend
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: headers,
         body: JSON.stringify({
           prompt: prompt,
           conversationId: conversationId,
           timezoneOffset: new Date().getTimezoneOffset(),
           anonymousUserId: userMetadata?.anonymousUserId,
           userDisplayName: userMetadata?.userDisplayName,
-          profilePreferences: userMetadata?.profilePreferences
+          profilePreferences: userMetadata?.profilePreferences,
+          temperature: settings?.temperature,
+          maxTokens: settings?.maxTokens
         })
       });
 
@@ -33,11 +41,12 @@ export class GeminiService {
       }
 
       const data = await response.json();
-      // The backend returns { response: "...", conversationId: "..." }
+      // The backend returns { response: "...", conversationId: "...", images: [...] }
       // We return the text and the new conversationId
       return {
         text: data.response || "No response received.",
-        conversationId: data.conversationId
+        conversationId: data.conversationId,
+        images: data.images
       };
     } catch (error) {
       console.error("Backend Error:", error);
@@ -45,9 +54,9 @@ export class GeminiService {
     }
   }
 
-  async sendMessageStream(prompt: string, history: any[], userMetadata?: any) {
+  async sendMessageStream(prompt: string, history: any[], settings?: any, userMetadata?: any) {
     // Streaming not fully ported for this quick integration, falling back to generateResponse structure
-    return this.generateResponse(prompt, history, null, false, userMetadata);
+    return this.generateResponse(prompt, history, null, settings, userMetadata);
   }
 }
 
