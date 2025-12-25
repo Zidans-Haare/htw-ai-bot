@@ -181,9 +181,57 @@ async function streamChat(req, res) {
   let sessionId = null;
 
   try {
-    const { prompt, conversationId, anonymousUserId, timezoneOffset, profilePreferences = null, userDisplayName = null } = req.body;
+    const { prompt, conversationId, anonymousUserId, timezoneOffset, profilePreferences = null, userDisplayName = null, images = [] } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt ist erforderlich' });
+    }
+
+    // Process uploaded images
+    const fs = require('fs');
+    const path = require('path');
+    const processedImages = [];
+    const imagesDir = path.resolve(__dirname, '..', '..', 'uploads', 'images');
+
+    // Ensure directory exists
+    if (!fs.existsSync(imagesDir)) {
+      fs.mkdirSync(imagesDir, { recursive: true });
+    }
+
+    for (const img of images) {
+      if (img.data && img.mimeType) {
+        try {
+          const base64Data = img.data.replace(/^data:image\/\w+;base64,/, "");
+          const buffer = Buffer.from(base64Data, 'base64');
+          const timestamp = Date.now();
+          const randomId = Math.random().toString(36).substring(2, 8);
+          const extension = img.mimeType.split('/')[1] || 'png';
+          const filename = `upload_${timestamp}_${randomId}.${extension}`;
+          const filepath = path.join(imagesDir, filename);
+
+          fs.writeFileSync(filepath, buffer);
+
+          // Save to DB
+          await Images.create({
+            data: {
+              filename: filename,
+              description: 'User uploaded image',
+              source: 'user_upload'
+            }
+          });
+
+          processedImages.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: img.mimeType
+            },
+            filename: filename // Keep track for response
+          });
+
+          console.log(`Saved uploaded image: ${filename}`);
+        } catch (e) {
+          console.error("Failed to save uploaded image:", e);
+        }
+      }
     }
 
     const userApiKey = req.headers['x-user-api-key'];
@@ -395,7 +443,13 @@ async function streamChat(req, res) {
     const messagesPayload = [
       { role: 'system', content: systemPrompt },
       ...openAIHistory,
-      { role: 'user', content: prompt },
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          ...processedImages.map(img => ({ inlineData: img.inlineData }))
+        ]
+      },
     ];
 
     // Get MCP tools
@@ -543,7 +597,11 @@ async function streamChat(req, res) {
         description: entry.description,
         url,
       };
-    });
+    }).concat(processedImages.map(img => ({
+      filename: img.filename,
+      description: 'User uploaded',
+      url: imageBaseUrl ? new URL(img.filename, imageBaseUrl).toString() : `/uploads/images/${img.filename}`
+    })));
 
     const responsePayload = {
       conversationId: convoId,

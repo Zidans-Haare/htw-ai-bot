@@ -1,5 +1,5 @@
 
-export type AuthState = 'loading' | 'landing' | 'login' | 'forgot-password' | 'reset-success' | 'authenticated';
+export type AuthState = 'loading' | 'landing' | 'login' | 'register' | 'forgot-password' | 'reset-success' | 'authenticated';
 
 export interface UserProfile {
   displayName?: string;

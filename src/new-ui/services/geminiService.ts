@@ -9,7 +9,8 @@ export class GeminiService {
       anonymousUserId?: string;
       userDisplayName?: string;
       profilePreferences?: any;
-    }
+    },
+    images: { data: string; mimeType: string }[] = []
   ) {
     try {
       const headers: HeadersInit = {
@@ -32,7 +33,8 @@ export class GeminiService {
           userDisplayName: userMetadata?.userDisplayName,
           profilePreferences: userMetadata?.profilePreferences,
           temperature: settings?.temperature,
-          maxTokens: settings?.maxTokens
+          maxTokens: settings?.maxTokens,
+          images: images
         })
       });
 
@@ -54,9 +56,9 @@ export class GeminiService {
     }
   }
 
-  async sendMessageStream(prompt: string, history: any[], settings?: any, userMetadata?: any) {
+  async sendMessageStream(prompt: string, history: any[], settings?: any, userMetadata?: any, images: any[] = []) {
     // Streaming not fully ported for this quick integration, falling back to generateResponse structure
-    return this.generateResponse(prompt, history, null, settings, userMetadata);
+    return this.generateResponse(prompt, history, null, settings, userMetadata, images);
   }
 }
 

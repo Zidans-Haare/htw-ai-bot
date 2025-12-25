@@ -95,8 +95,8 @@ app.set('trust proxy', process.env.TRUST_PROXY_COUNT || 2);
 const port = process.env.PORT || 3000;
 
 // Set body parser limits
-app.use(express.json({ limit: `${UPLOAD_LIMIT_MB}mb` }));
-app.use(express.urlencoded({ limit: `${UPLOAD_LIMIT_MB}mb` }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const useHttps = process.argv.includes('-https');
 const isTest = process.argv.includes('--test');
 const isDev = process.argv.includes('-dev');

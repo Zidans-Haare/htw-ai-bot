@@ -12,6 +12,8 @@ interface Props {
 const AuthScreens: React.FC<Props> = ({ state, setState, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (state === 'login') {
     return (
@@ -76,7 +78,92 @@ const AuthScreens: React.FC<Props> = ({ state, setState, onLogin }) => {
 
           <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center gap-1 text-sm">
             <p className="text-slate-500">Need access?</p>
-            <button className="text-slate-900 font-semibold hover:underline">Contact IT Admin</button>
+            <button onClick={() => setState('register')} className="text-slate-900 font-semibold hover:underline">Create Account</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === 'register') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 font-display">
+        <div className="w-full max-w-[480px] bg-white/70 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl p-8 sm:p-10 animate-fade-in-up">
+          <div className="flex flex-col items-center gap-4 text-center mb-8">
+            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-slate-900 text-white mb-2 shadow-lg">
+              <span className="material-symbols-outlined text-[32px]">person_add</span>
+            </div>
+            <h1 className="text-slate-900 text-3xl font-bold tracking-tight">Join Nexus</h1>
+            <p className="text-slate-500 text-sm font-medium">Create your secure workspace account.</p>
+          </div>
+
+          <form className="space-y-5" onSubmit={async (e) => {
+            e.preventDefault();
+            setIsLoading(true);
+            try {
+              await import('../services/authService').then(m => m.authService.register(email, password, displayName));
+              // Log in automatically after register
+              if (onLogin) onLogin(email, password);
+            } catch (err: any) {
+              alert(err.message || 'Registration failed');
+            } finally {
+              setIsLoading(false);
+            }
+          }}>
+            <div className="space-y-2">
+              <label className="text-slate-900 text-sm font-semibold ml-1">Display Name</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-slate-400 material-symbols-outlined text-[20px]">badge</span>
+                <input
+                  type="text"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 h-12 pl-11 pr-4 focus:ring-slate-900 focus:border-slate-900 transition-all"
+                  placeholder="John Doe"
+                  required
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-slate-900 text-sm font-semibold ml-1">Work Email</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-slate-400 material-symbols-outlined text-[20px]">mail</span>
+                <input
+                  type="email"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 h-12 pl-11 pr-4 focus:ring-slate-900 focus:border-slate-900 transition-all"
+                  placeholder="name@company.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-slate-900 text-sm font-semibold ml-1">Password</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-slate-400 material-symbols-outlined text-[20px]">key</span>
+                <input
+                  type="password"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 h-12 pl-11 pr-4 focus:ring-slate-900 focus:border-slate-900 transition-all"
+                  placeholder="Min. 8 characters"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button disabled={isLoading} className="w-full h-12 rounded-lg bg-slate-900 hover:bg-black text-white font-bold transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center gap-1 text-sm">
+            <p className="text-slate-500">Already have an account?</p>
+            <button onClick={() => setState('login')} className="text-slate-900 font-semibold hover:underline">Log In</button>
           </div>
         </div>
       </div>

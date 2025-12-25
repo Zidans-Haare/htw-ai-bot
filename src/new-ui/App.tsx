@@ -113,8 +113,8 @@ const App: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   }, [settings.textToSpeech, settings.speechRate]);
 
-  const handleSendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return;
+  const handleSendMessage = useCallback(async (content: string, images: { data: string; mimeType: string }[] = []) => {
+    if (!content.trim() && images.length === 0) return;
 
     let targetChatId = currentChatId;
     let updatedChats = [...chats];
@@ -123,7 +123,7 @@ const App: React.FC = () => {
       targetChatId = `chat_${Date.now()}`;
       const newChat: ChatSession = {
         id: targetChatId,
-        title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
+        title: content.slice(0, 30) + (content.length > 30 ? '...' : '') || 'Image Upload',
         lastUpdated: Date.now(),
         messages: [],
         isFavorite: false
@@ -137,7 +137,12 @@ const App: React.FC = () => {
       id: `msg_${Date.now()}`,
       role: 'user',
       content,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      images: images.map(img => ({
+        url: img.data,
+        description: 'User uploaded image',
+        filename: 'upload'
+      }))
     };
 
     setChats(prev => prev.map(c => c.id === targetChatId ? {
@@ -167,12 +172,13 @@ const App: React.FC = () => {
         profilePreferences: user?.profile?.mensaPreferences
       };
 
-      const { text: aiText, conversationId: serverConversationId, images } = await gemini.generateResponse(
+      const { text: aiText, conversationId: serverConversationId, images: responseImages } = await gemini.generateResponse(
         content,
         chatContext,
         targetChatId,
         settings,
-        userMetadata
+        userMetadata,
+        images
       );
 
       const botMessage: Message = {
@@ -181,7 +187,7 @@ const App: React.FC = () => {
         content: aiText,
         timestamp: Date.now(),
         isThinking: settings.thinkingMode,
-        images: images
+        images: responseImages
       };
 
       if (serverConversationId && serverConversationId !== targetChatId) {

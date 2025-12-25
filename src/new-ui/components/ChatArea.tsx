@@ -9,7 +9,7 @@ import { suggestionService } from '../services/suggestionService';
 interface Props {
   chat?: ChatSession;
   isLoading: boolean;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, images?: { data: string; mimeType: string }[]) => void;
   settings: AppSettings;
   onToggleThinking: (val: boolean) => void;
   onOpenMenu: () => void;
@@ -19,6 +19,26 @@ interface Props {
 
 const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, onToggleThinking, onOpenMenu, onDeleteChat, onToggleFavorite }) => {
   const [inputValue, setInputValue] = useState('');
+  const [attachedImages, setAttachedImages] = useState<{ data: string; mimeType: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const base64 = event.target.result as string;
+          setAttachedImages(prev => [...prev, { data: base64, mimeType: file.type }]);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setAttachedImages(prev => prev.filter((_, i) => i !== index));
+  };
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -85,9 +105,10 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
   ) || [];
 
   const handleSend = () => {
-    if (!inputValue.trim() || isLoading) return;
-    onSendMessage(inputValue);
+    if ((!inputValue.trim() && attachedImages.length === 0) || isLoading) return;
+    onSendMessage(inputValue, attachedImages);
     setInputValue('');
+    setAttachedImages([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -237,7 +258,35 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             rows={1}
             className="flex-1 bg-transparent border-none focus:ring-0 text-[13px] md:text-sm py-2.5 md:py-3 resize-none max-h-32 md:max-h-40 text-slate-800 dark:text-white"
           />
+
+          {attachedImages.length > 0 && (
+            <div className="absolute bottom-full left-6 mb-2 flex gap-2">
+              {attachedImages.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <img src={img.data} className="h-16 w-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm" />
+                  <button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-slate-900 text-white rounded-full p-0.5 shadow-md hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-[12px] block">close</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-1 pr-1 pb-1">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileSelect}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 md:p-2.5 rounded-xl transition-all active:scale-90 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              title="Attach Image"
+            >
+              <span className="material-symbols-outlined text-[18px] md:text-[20px]">attach_file</span>
+            </button>
             <button
               onClick={() => onToggleThinking(!settings.thinkingMode)}
               className={`p-2 md:p-2.5 rounded-xl transition-all active:scale-90 ${settings.thinkingMode ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -247,7 +296,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             </button>
             <button
               onClick={handleSend}
-              disabled={!inputValue.trim() || isLoading}
+              disabled={(!inputValue.trim() && attachedImages.length === 0) || isLoading}
               className={`size-9 md:size-11 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-90 ${settings.thinkingMode ? 'bg-indigo-600' : 'bg-slate-900 dark:bg-white'} text-white dark:text-slate-900 disabled:opacity-50`}
             >
               <span className="material-symbols-outlined text-[20px]">send</span>
