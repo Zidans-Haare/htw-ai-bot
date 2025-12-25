@@ -283,7 +283,7 @@ const App: React.FC = () => {
   const currentChat = chats.find(c => c.id === currentChatId);
 
   return (
-    <div className="fixed inset-0 w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="fixed inset-0 flex w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
