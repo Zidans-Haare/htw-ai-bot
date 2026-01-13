@@ -1,4 +1,5 @@
 const { HochschuhlABC, Questions, Images, Conversation, Message } = require('./db.cjs');
+const auth = require('./authController.cjs');
 const { getImageList } = require('../utils/imageProvider.js');
 const { estimateTokens, isWithinTokenLimit } = require('../utils/tokenizer');
 const { summarizeConversation } = require('../utils/summarizer');
@@ -6,6 +7,7 @@ const { trackSession, trackChatInteraction, trackArticleView, extractArticleIds 
 const { chatCompletion, chatCompletionStream } = require('../utils/aiProvider');
 const vectorStore = require('../lib/vectorStore');
 const { buildOpenMensaContext, shouldHandleOpenMensa } = require('../utils/openmensa');
+const { getMcpTools, executeMcpTool } = require('../utils/mcpTools');
 
 // Lazy import to avoid immediate API key check
 let categorizeConversation = null;
@@ -50,6 +52,20 @@ function buildImageBaseUrl(req) {
     return null;
   }
   return `${protocol}://${host}/uploads/images/`;
+}
+
+const ACCESS_LEVEL_HIERARCHY = {
+  'admin': ['public', 'intern', 'employee', 'manager', 'admin'],
+  'manager': ['public', 'intern', 'employee', 'manager'],
+  'entwickler': ['public', 'intern', 'employee', 'manager', 'admin'], // Devs see all
+  'employee': ['public', 'intern', 'employee'],
+  'editor': ['public', 'intern', 'employee'], // Editors see same as employees by default? Or more?
+  'intern': ['public', 'intern'],
+  'public': ['public']
+};
+
+function getAllowedAccessLevels(role) {
+  return ACCESS_LEVEL_HIERARCHY[role] || ['public'];
 }
 
 // Removed runChatCompletion, using chatCompletion directly
@@ -180,9 +196,57 @@ async function streamChat(req, res) {
   let sessionId = null;
 
   try {
-    const { prompt, conversationId, anonymousUserId, timezoneOffset, profilePreferences = null, userDisplayName = null } = req.body;
+    const { prompt, conversationId, anonymousUserId, timezoneOffset, profilePreferences = null, userDisplayName = null, images = [] } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt ist erforderlich' });
+    }
+
+    // Process uploaded images
+    const fs = require('fs');
+    const path = require('path');
+    const processedImages = [];
+    const imagesDir = path.resolve(__dirname, '..', '..', 'uploads', 'images');
+
+    // Ensure directory exists
+    if (!fs.existsSync(imagesDir)) {
+      fs.mkdirSync(imagesDir, { recursive: true });
+    }
+
+    for (const img of images) {
+      if (img.data && img.mimeType) {
+        try {
+          const base64Data = img.data.replace(/^data:image\/\w+;base64,/, "");
+          const buffer = Buffer.from(base64Data, 'base64');
+          const timestamp = Date.now();
+          const randomId = Math.random().toString(36).substring(2, 8);
+          const extension = img.mimeType.split('/')[1] || 'png';
+          const filename = `upload_${timestamp}_${randomId}.${extension}`;
+          const filepath = path.join(imagesDir, filename);
+
+          fs.writeFileSync(filepath, buffer);
+
+          // Save to DB
+          await Images.create({
+            data: {
+              filename: filename,
+              description: 'User uploaded image',
+              source: 'user_upload'
+            }
+          });
+
+          processedImages.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: img.mimeType
+            },
+            filename: filename // Keep track for response
+          });
+
+          console.log(`Saved uploaded image: ${filename}`);
+        } catch (e) {
+          console.error("Failed to save uploaded image:", e);
+        }
+      }
     }
 
     const userApiKey = req.headers['x-user-api-key'];
@@ -228,8 +292,24 @@ async function streamChat(req, res) {
     }));
 
     let hochschulContent = '';
+
+    // Determine user role and allowed access levels
+    let userRole = 'public';
+    try {
+      const token = req.cookies[auth.ADMIN_SESSION_COOKIE] || req.cookies[auth.USER_SESSION_COOKIE];
+      if (token) {
+        const session = await auth.getSession(token);
+        if (session) userRole = session.role;
+      }
+    } catch (e) { console.error('Auth check in chat failed', e); }
+
+    const allowedLevels = getAllowedAccessLevels(userRole);
+    // Simple $in filter for Chroma (LangChain translates or Chroma accepts)
+    // For Weaviate this might need specific handling, but we start with generic object filter
+    const accessFilter = { access_level: { $in: allowedLevels } };
+
     if (vectorStore.store) {
-      const relevantDocs = await vectorStore.similaritySearch(prompt);
+      const relevantDocs = await vectorStore.similaritySearch(prompt, 3, accessFilter);
       hochschulContent = relevantDocs.map(doc => doc.pageContent).join('\n\n');
       if (vectorStore.graphData) {
         const graphContext = await vectorStore.getGraphSummary(prompt, vectorStore.graphData);
@@ -353,11 +433,18 @@ async function streamChat(req, res) {
 
       If multiple persons are responsible, briefly explain the difference between them and provide full contact data for each.
 
-      If there are diverging Answers for long and short term students, and the user did not yet specify their status,
+      If there are diverging Answers for long and short term students, and the user did not specify their status,
       ask for clarification and point out the difference.
 
+      **IMPORTANT: Use available tools when needed**
+      You have access to various tools that can help you provide accurate, up-to-date information. When a user asks about:
+      - Mensa menus, canteen information, or food services: Use the OpenMensa tools to get current data
+      - Library resources or documentation: Use Context7 tools to find relevant docs
+      - Any external data or services: Check if appropriate tools are available
 
-      **Knowledgebase of the HTW Desden**:
+      Always use tools when they can provide more accurate or current information than your training data.
+
+      **Knowledgebase of the HTW Dresden**:
       ${hochschulContent}
 
       **Image List**:
@@ -369,7 +456,7 @@ async function streamChat(req, res) {
 
       --
 
-      If you can not answer a question about the HTW Dresden from the Knowledgebase or the OpenMensa data,
+      If you can not answer a question about the HTW Dresden from the Knowledgebase, available tools, or the OpenMensa data,
       add the chars "<+>" at the end of the answer. If you can explain that there are currently keine Daten or the Mensa is closed and offer guidance, do NOT append "<+>".
 
       --
@@ -387,21 +474,112 @@ async function streamChat(req, res) {
     const messagesPayload = [
       { role: 'system', content: systemPrompt },
       ...openAIHistory,
-      { role: 'user', content: prompt },
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          ...processedImages.map(img => ({ inlineData: img.inlineData }))
+        ]
+      },
     ];
 
-    let fullResponseText = '';
+    // Get MCP tools
+    const mcpTools = await getMcpTools();
+    const tools = mcpTools.map(t => t.tool);
+    console.log(`Loaded ${tools.length} MCP tools: ${tools.map(t => t.function.name).join(', ')}`);
 
-    if (process.env.AI_STREAMING === 'true') {
-      const stream = chatCompletionStream(messagesPayload, { apiKey: userApiKey, temperature: 0.2 });
-
-      for await (const chunk of stream) {
-        fullResponseText += chunk.token;
-      }
-    } else {
-      const response = await chatCompletion(messagesPayload, { apiKey: userApiKey, temperature: 0.2 });
-      fullResponseText = response.content;
+    // Check if AI provider supports tool calls
+    const { supportsToolCalls } = require('../utils/aiProvider');
+    const toolCallsSupported = await supportsToolCalls();
+    if (tools.length > 0 && !toolCallsSupported) {
+      console.log('AI model does not support tool calls, skipping MCP tools');
+      tools.length = 0; // Clear tools array
     }
+
+    let fullResponseText = '';
+    let lastAiContent = ''; // Store the last meaningful AI response
+    let finalMessages = messagesPayload;
+
+    // Tool calling loop
+    const toolStatuses = [];
+    for (let i = 0; i < 5; i++) {
+      console.log(`Tool calling loop iteration ${i + 1}, messages count: ${finalMessages.length}`);
+
+      const response = await chatCompletion(finalMessages, {
+        apiKey: userApiKey,
+        temperature: 0.2,
+        tools: tools.length > 0 ? tools : undefined,
+      });
+
+      console.log(`AI response - content length: ${response.content?.length || 0}, tool calls: ${response.tool_calls?.length || 0}, finish_reason: ${response.finish_reason}`);
+
+      // Store any content from AI as potential response
+      if (response.content && response.content.trim()) {
+        lastAiContent = response.content;
+        console.log(`Stored AI content as potential response: ${lastAiContent.substring(0, 50)}...`);
+      }
+
+      if (response.tool_calls && response.tool_calls.length > 0) {
+        console.log(`AI made ${response.tool_calls.length} tool calls`);
+
+        // Collect tool status for frontend
+        for (const toolCall of response.tool_calls) {
+          const tool = mcpTools.find(t => t.tool.function.name === toolCall.function.name);
+          if (tool) {
+            toolStatuses.push(`Using Tool: ${tool.tool.function.name}...`);
+            console.log(`Added tool status: Using Tool: ${tool.tool.function.name}...`);
+          }
+        }
+
+        // Execute tools
+        finalMessages.push({ role: 'assistant', content: response.content, tool_calls: response.tool_calls });
+        for (const toolCall of response.tool_calls) {
+          try {
+            console.log(`Executing tool: ${toolCall.function.name} with args: ${toolCall.function.arguments}`);
+            const result = await executeMcpTool(toolCall, mcpTools);
+            console.log(`Tool result length: ${result.content.length}`);
+            finalMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              function_name: toolCall.function.name, // For Google provider compatibility
+              content: result.content
+            });
+            console.log(`Added tool result to messages, new count: ${finalMessages.length}`);
+          } catch (error) {
+            console.error('Tool execution error:', error);
+            finalMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              function_name: toolCall.function.name, // For Google provider compatibility
+              content: `Error: ${error.message}`
+            });
+          }
+        }
+      } else {
+        fullResponseText = response.content || '';
+        console.log(`No more tool calls, final response: ${fullResponseText.substring(0, 100)}...`);
+        break;
+      }
+    }
+
+    // Set final response - use last AI content if no final response was generated
+    if (!fullResponseText && lastAiContent) {
+      console.log(`Using last AI content as final response since no proper final response was generated`);
+      fullResponseText = lastAiContent;
+    } else if (!fullResponseText) {
+      fullResponseText = 'No response generated.';
+    }
+
+    // Save AI message to DB
+    await Message.create({
+      data: {
+        conversation_id: conversation.id,
+        role: 'assistant',
+        content: fullResponseText,
+        created_at: new Date(),
+      },
+    });
+    console.log(`Saved AI message to DB: ${fullResponseText}`);
 
     if (openMensaMetadata && /<\+>\s*$/.test(fullResponseText)) {
       fullResponseText = fullResponseText.replace(/\s*<\+>\s*$/, '').trimEnd();
@@ -450,7 +628,11 @@ async function streamChat(req, res) {
         description: entry.description,
         url,
       };
-    });
+    }).concat(processedImages.map(img => ({
+      filename: img.filename,
+      description: 'User uploaded',
+      url: imageBaseUrl ? new URL(img.filename, imageBaseUrl).toString() : `/uploads/images/${img.filename}`
+    })));
 
     const responsePayload = {
       conversationId: convoId,
@@ -458,6 +640,10 @@ async function streamChat(req, res) {
       images: imagesForPayload,
       imageBaseUrl: normalizedImageBaseUrl,
     };
+
+    if (toolStatuses.length > 0) {
+      responsePayload.toolStatuses = toolStatuses;
+    }
 
     if (openMensaMetadata) {
       responsePayload.openMensa = openMensaMetadata;
@@ -614,4 +800,85 @@ async function getSuggestions(req, res) {
   }
 }
 
-module.exports = { streamChat, getSuggestions, testApiKey };
+/**
+ * @swagger
+ * /api/history:
+ *   get:
+ *     summary: Chat-Verlauf abrufen
+ *     tags: [AI]
+ *     parameters:
+ *       - in: query
+ *         name: anonymousUserId
+ *         schema:
+ *           type: string
+ *         description: Anonyme Benutzer-ID
+ *     responses:
+ *       200:
+ *         description: Liste der Chats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   messages:
+ *                     type: array
+ *       500:
+ *         description: Serverfehler
+ */
+async function getChatHistory(req, res) {
+  try {
+    const userId = req.session?.user?.id;
+    const anonymousUserId = req.query.anonymousUserId;
+
+    if (!userId && !anonymousUserId) {
+      return res.json([]);
+    }
+
+    const whereClause = userId
+      ? { user_id: userId }
+      : { anonymous_user_id: anonymousUserId };
+
+    const conversations = await Conversation.findMany({
+      where: whereClause,
+      orderBy: { created_at: 'desc' },
+      take: 50,
+      include: {
+        messages: {
+          orderBy: { created_at: 'asc' }
+        }
+      }
+    });
+
+    const formattedHistory = conversations.map(convo => {
+      // Create a title from the first user message if possible
+      const firstUserMsg = convo.messages.find(m => m.role === 'user');
+      const title = firstUserMsg
+        ? (firstUserMsg.content.length > 40 ? firstUserMsg.content.substring(0, 40) + '...' : firstUserMsg.content)
+        : 'Neue Konversation';
+
+      return {
+        id: convo.id,
+        title: title,
+        updatedAt: convo.created_at,
+        messages: convo.messages.map(msg => ({
+          text: msg.content,
+          isUser: msg.role === 'user',
+          timestamp: msg.created_at
+        }))
+      };
+    });
+
+    res.json(formattedHistory);
+  } catch (error) {
+    console.error('Error fetching chat history:', error);
+    res.status(500).json({ error: 'Failed to fetch chat history' });
+  }
+}
+
+module.exports = { streamChat, getSuggestions, testApiKey, getChatHistory };

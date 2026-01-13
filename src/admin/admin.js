@@ -12,6 +12,7 @@ import { initImages } from './images.js';
 import { initDocuments } from './documents.js';
 import { renderMarkup } from '../components/markup.js';
 import { initStats } from './stats.js';
+import { initMcpServers } from './mcpServers.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Admin page loaded, initializing...');
@@ -51,33 +52,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-   // --- Get remaining DOM Elements ---
-   const editorBtn = document.getElementById('btn-editor');
-   const questionsBtn = document.getElementById('btn-questions');
-   const archiveBtn = document.getElementById('btn-archive');
-   const userBtn = document.getElementById('btn-user');
-   const feedbackBtn = document.getElementById('btn-feedback');
-    const exportBtn = document.getElementById('btn-export');
-    const backupBtn = document.getElementById('btn-backup');
-    const logoutBtn = document.getElementById('btn-logout');
-    const imagesBtn = document.getElementById('btn-images');
-    const documentsBtn = document.getElementById('btn-documents');
-    const conversationsBtn = document.getElementById('btn-conversations');
-   const statsBtn = document.getElementById('btn-stats');
+  // --- Get remaining DOM Elements ---
+  const editorBtn = document.getElementById('btn-editor');
+  const questionsBtn = document.getElementById('btn-questions');
+  const archiveBtn = document.getElementById('btn-archive');
+  const userBtn = document.getElementById('btn-user');
+  const feedbackBtn = document.getElementById('btn-feedback');
+  const exportBtn = document.getElementById('btn-export');
+  const backupBtn = document.getElementById('btn-backup');
+  const logoutBtn = document.getElementById('btn-logout');
+  const imagesBtn = document.getElementById('btn-images');
+  const documentsBtn = document.getElementById('btn-documents');
+  const conversationsBtn = document.getElementById('btn-conversations');
+  const statsBtn = document.getElementById('btn-stats');
+  const mcpBtn = document.getElementById('btn-mcp');
 
-   // Mobile buttons
-   const mobileEditorBtn = document.getElementById('mobile-btn-editor');
-   const mobileQuestionsBtn = document.getElementById('mobile-btn-questions');
-   const mobileArchiveBtn = document.getElementById('mobile-btn-archive');
-   const mobileUserBtn = document.getElementById('mobile-btn-user');
-   const mobileFeedbackBtn = document.getElementById('mobile-btn-feedback');
-    const mobileExportBtn = document.getElementById('mobile-btn-export');
-    const mobileBackupBtn = document.getElementById('mobile-btn-backup');
-    const mobileLogoutBtn = document.getElementById('mobile-btn-logout');
-    const mobileImagesBtn = document.getElementById('mobile-btn-images');
-    const mobileDocumentsBtn = document.getElementById('mobile-btn-documents');
-    const mobileConversationsBtn = document.getElementById('mobile-btn-conversations');
-   const mobileStatsBtn = document.getElementById('mobile-btn-stats');
+  // Mobile buttons
+  const mobileEditorBtn = document.getElementById('mobile-btn-editor');
+  const mobileQuestionsBtn = document.getElementById('mobile-btn-questions');
+  const mobileArchiveBtn = document.getElementById('mobile-btn-archive');
+  const mobileUserBtn = document.getElementById('mobile-btn-user');
+  const mobileFeedbackBtn = document.getElementById('mobile-btn-feedback');
+  const mobileExportBtn = document.getElementById('mobile-btn-export');
+  const mobileBackupBtn = document.getElementById('mobile-btn-backup');
+  const mobileLogoutBtn = document.getElementById('mobile-btn-logout');
+  const mobileImagesBtn = document.getElementById('mobile-btn-images');
+  const mobileDocumentsBtn = document.getElementById('mobile-btn-documents');
+  const mobileConversationsBtn = document.getElementById('mobile-btn-conversations');
+  const mobileStatsBtn = document.getElementById('mobile-btn-stats');
+  const mobileMcpBtn = document.getElementById('mobile-btn-mcp');
 
   const editorView = document.getElementById('editor-view');
   const questionsView = document.getElementById('questions-view');
@@ -86,18 +89,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const feedbackView = document.getElementById('feedback-view');
   const imagesView = document.getElementById('images-view');
   const documentsView = document.getElementById('documents-view');
-   const conversationsView = document.getElementById('conversations-view');
-   const statsView = document.getElementById('stats-view');
-   const backupView = document.getElementById('backup-view');
+  const conversationsView = document.getElementById('conversations-view');
+  const statsView = document.getElementById('stats-view');
+  const backupView = document.getElementById('backup-view');
+  const mcpView = document.getElementById('mcp-view');
 
   const openCountSpan = document.getElementById('open-count');
 
-   const sidebar = document.getElementById('sidebar');
-   const sidebarToggle = document.getElementById('sidebar-toggle');
-   const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
-   const hamburgerBtn = document.getElementById('hamburger-btn');
-   const mobileMenu = document.getElementById('mobile-menu');
-   const mobileOpenCount = document.getElementById('mobile-open-count');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
+  const hamburgerBtn = document.getElementById('hamburger-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileOpenCount = document.getElementById('mobile-open-count');
 
   // --- Sidebar Toggle Logic ---
   function setSidebarState(collapsed) {
@@ -118,23 +122,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.setItem('sidebarCollapsed', isCollapsed);
   });
 
-   // Check for saved sidebar state
-   const savedSidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
-   setSidebarState(savedSidebarState);
+  // Check for saved sidebar state
+  const savedSidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
+  setSidebarState(savedSidebarState);
 
-   // Hamburger menu for mobile
-   hamburgerBtn.addEventListener('click', () => {
-     console.log('Hamburger clicked');
-     mobileMenu.classList.toggle('hidden');
-     console.log('Mobile menu visible:', !mobileMenu.classList.contains('hidden'));
-   });
+  // Hamburger menu for mobile
+  hamburgerBtn.addEventListener('click', () => {
+    console.log('Hamburger clicked');
+    mobileMenu.classList.toggle('hidden');
+    console.log('Mobile menu visible:', !mobileMenu.classList.contains('hidden'));
+  });
 
-   // Close mobile menu when clicking outside
-   document.addEventListener('click', (e) => {
-     if (window.innerWidth < 768 && !mobileMenu.contains(e.target) && e.target !== hamburgerBtn && !hamburgerBtn.contains(e.target)) {
-       mobileMenu.classList.add('hidden');
-     }
-   });
+  // Close mobile menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth < 768 && !mobileMenu.contains(e.target) && e.target !== hamburgerBtn && !hamburgerBtn.contains(e.target)) {
+      mobileMenu.classList.add('hidden');
+    }
+  });
 
   // --- View Switching Logic ---
   function showEditor() {
@@ -166,11 +170,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('backup-create')?.classList.add('hidden');
     updateButtonStyles(questionsBtn);
   }
-  
-   function updateOpenCount(num) {
-     if (openCountSpan) openCountSpan.textContent = num;
-     if (mobileOpenCount) mobileOpenCount.textContent = num;
-   }
+
+  function updateOpenCount(num) {
+    if (openCountSpan) openCountSpan.textContent = num;
+    if (mobileOpenCount) mobileOpenCount.textContent = num;
+  }
 
   function showArchive() {
     archiveView.classList.remove('hidden');
@@ -279,9 +283,190 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateButtonStyles(statsBtn);
   }
 
-    function showBackup() {
-      statsView.classList.add('hidden');
-      backupView.classList.remove('hidden');
+  function showBackup() {
+    backupView.classList.remove('hidden');
+    editorView.classList.add('hidden');
+    questionsView.classList.add('hidden');
+    archiveView.classList.add('hidden');
+    userView.classList.add('hidden');
+    feedbackView.classList.add('hidden');
+    imagesView.classList.add('hidden');
+    documentsView.classList.add('hidden');
+    if (conversationsView) conversationsView.classList.add('hidden');
+    statsView.classList.add('hidden');
+    mcpView.classList.add('hidden');
+    document.getElementById('backup-create')?.classList.add('hidden');
+    updateButtonStyles(backupBtn);
+    initBackup();
+  }
+
+  function showMcp() {
+    mcpView.classList.remove('hidden');
+    editorView.classList.add('hidden');
+    questionsView.classList.add('hidden');
+    archiveView.classList.add('hidden');
+    userView.classList.add('hidden');
+    feedbackView.classList.add('hidden');
+    imagesView.classList.add('hidden');
+    documentsView.classList.add('hidden');
+    if (conversationsView) conversationsView.classList.add('hidden');
+    statsView.classList.add('hidden');
+    backupView.classList.add('hidden');
+    document.getElementById('backup-create')?.classList.add('hidden');
+    updateButtonStyles(mcpBtn);
+    initMcpServers();
+  }
+
+  function updateButtonStyles(activeButton) {
+    const buttons = [editorBtn, questionsBtn, archiveBtn, userBtn, feedbackBtn, exportBtn, backupBtn, imagesBtn, documentsBtn, conversationsBtn, statsBtn];
+    buttons.forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
+    if (activeButton) activeButton.classList.add('active');
+
+    // Mobile buttons
+    const mobileButtons = [mobileEditorBtn, mobileQuestionsBtn, mobileArchiveBtn, mobileUserBtn, mobileFeedbackBtn, mobileExportBtn, mobileBackupBtn, mobileImagesBtn, mobileConversationsBtn, mobileStatsBtn];
+    mobileButtons.forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
+    // Map desktop to mobile
+    const mobileMap = {
+      [editorBtn]: mobileEditorBtn,
+      [questionsBtn]: mobileQuestionsBtn,
+      [archiveBtn]: mobileArchiveBtn,
+      [userBtn]: mobileUserBtn,
+      [feedbackBtn]: mobileFeedbackBtn,
+      [exportBtn]: mobileExportBtn,
+      [backupBtn]: mobileBackupBtn,
+      [imagesBtn]: mobileImagesBtn,
+      [documentsBtn]: mobileDocumentsBtn,
+      [conversationsBtn]: mobileConversationsBtn,
+      [statsBtn]: mobileStatsBtn
+    };
+    if (mobileMap[activeButton]) mobileMap[activeButton].classList.add('active');
+  }
+
+  // --- Role-based UI Setup ---
+  const userRole = sessionStorage.getItem('userRole');
+
+  // Hide all role-dependent buttons by default
+  editorBtn.classList.add('hidden');
+  questionsBtn.classList.add('hidden');
+  archiveBtn.classList.add('hidden');
+  userBtn.classList.add('hidden');
+  feedbackBtn.classList.add('hidden');
+  if (imagesBtn) imagesBtn.classList.add('hidden');
+  if (documentsBtn) documentsBtn.classList.add('hidden');
+  if (conversationsBtn) conversationsBtn.classList.add('hidden');
+
+  // Mobile buttons
+  if (mobileEditorBtn) mobileEditorBtn.classList.add('hidden');
+  if (mobileQuestionsBtn) mobileQuestionsBtn.classList.add('hidden');
+  if (mobileArchiveBtn) mobileArchiveBtn.classList.add('hidden');
+  if (mobileUserBtn) mobileUserBtn.classList.add('hidden');
+  if (mobileFeedbackBtn) mobileFeedbackBtn.classList.add('hidden');
+  if (mobileImagesBtn) mobileImagesBtn.classList.add('hidden');
+  if (mobileDocumentsBtn) mobileDocumentsBtn.classList.add('hidden');
+  if (mobileConversationsBtn) mobileConversationsBtn.classList.add('hidden');
+  if (mobileStatsBtn) mobileStatsBtn.classList.add('hidden');
+
+  switch (userRole) {
+    case 'admin':
+      editorBtn.classList.remove('hidden');
+      questionsBtn.classList.remove('hidden');
+      archiveBtn.classList.remove('hidden');
+      userBtn.classList.remove('hidden');
+      feedbackBtn.classList.remove('hidden');
+      backupBtn.classList.remove('hidden');
+      mcpBtn.classList.remove('hidden');
+      if (imagesBtn) imagesBtn.classList.remove('hidden');
+      if (documentsBtn) documentsBtn.classList.remove('hidden');
+      if (conversationsBtn) conversationsBtn.classList.remove('hidden');
+
+      // Mobile
+      if (mobileEditorBtn) mobileEditorBtn.classList.remove('hidden');
+      if (mobileQuestionsBtn) mobileQuestionsBtn.classList.remove('hidden');
+      if (mobileArchiveBtn) mobileArchiveBtn.classList.remove('hidden');
+      if (mobileUserBtn) mobileUserBtn.classList.remove('hidden');
+      if (mobileFeedbackBtn) mobileFeedbackBtn.classList.remove('hidden');
+      if (mobileBackupBtn) mobileBackupBtn.classList.remove('hidden');
+      if (mobileMcpBtn) mobileMcpBtn.classList.remove('hidden');
+      if (mobileImagesBtn) mobileImagesBtn.classList.remove('hidden');
+      if (mobileDocumentsBtn) mobileDocumentsBtn.classList.remove('hidden');
+      if (mobileConversationsBtn) mobileConversationsBtn.classList.remove('hidden');
+
+      editorBtn.addEventListener('click', showEditor);
+      questionsBtn.addEventListener('click', showQuestions);
+      archiveBtn.addEventListener('click', showArchive);
+      userBtn.addEventListener('click', showUserAdmin);
+      feedbackBtn.addEventListener('click', showFeedback);
+      backupBtn.addEventListener('click', showBackup);
+      mcpBtn.addEventListener('click', showMcp);
+      if (imagesBtn) imagesBtn.addEventListener('click', showImages);
+      if (documentsBtn) documentsBtn.addEventListener('click', showDocuments);
+
+      // Mobile events
+      if (mobileEditorBtn) mobileEditorBtn.addEventListener('click', () => { showEditor(); mobileMenu.classList.add('hidden'); });
+      if (mobileQuestionsBtn) mobileQuestionsBtn.addEventListener('click', () => { showQuestions(); mobileMenu.classList.add('hidden'); });
+      if (mobileArchiveBtn) mobileArchiveBtn.addEventListener('click', () => { showArchive(); mobileMenu.classList.add('hidden'); });
+      if (mobileUserBtn) mobileUserBtn.addEventListener('click', () => { showUserAdmin(); mobileMenu.classList.add('hidden'); });
+      if (mobileFeedbackBtn) mobileFeedbackBtn.addEventListener('click', () => { showFeedback(); mobileMenu.classList.add('hidden'); });
+      if (mobileBackupBtn) mobileBackupBtn.addEventListener('click', () => { showBackup(); mobileMenu.classList.add('hidden'); });
+      if (mobileMcpBtn) mobileMcpBtn.addEventListener('click', () => { showMcp(); mobileMenu.classList.add('hidden'); });
+      if (mobileImagesBtn) mobileImagesBtn.addEventListener('click', () => { showImages(); mobileMenu.classList.add('hidden'); });
+      if (mobileDocumentsBtn) mobileDocumentsBtn.addEventListener('click', () => { showDocuments(); mobileMenu.classList.add('hidden'); });
+
+      showEditor();
+      break;
+    case 'editor':
+      editorBtn.classList.remove('hidden');
+      questionsBtn.classList.remove('hidden');
+      archiveBtn.classList.remove('hidden');
+      if (imagesBtn) imagesBtn.classList.remove('hidden');
+      if (documentsBtn) documentsBtn.classList.remove('hidden');
+
+      // Mobile
+      if (mobileEditorBtn) mobileEditorBtn.classList.remove('hidden');
+      if (mobileQuestionsBtn) mobileQuestionsBtn.classList.remove('hidden');
+      if (mobileArchiveBtn) mobileArchiveBtn.classList.remove('hidden');
+      if (mobileImagesBtn) mobileImagesBtn.classList.remove('hidden');
+      if (mobileDocumentsBtn) mobileDocumentsBtn.classList.remove('hidden');
+
+      editorBtn.addEventListener('click', showEditor);
+      questionsBtn.addEventListener('click', showQuestions);
+      archiveBtn.addEventListener('click', showArchive);
+      if (imagesBtn) imagesBtn.addEventListener('click', showImages);
+      if (documentsBtn) documentsBtn.addEventListener('click', showDocuments);
+
+      // Mobile events
+      if (mobileEditorBtn) mobileEditorBtn.addEventListener('click', () => { showEditor(); mobileMenu.classList.add('hidden'); });
+      if (mobileQuestionsBtn) mobileQuestionsBtn.addEventListener('click', () => { showQuestions(); mobileMenu.classList.add('hidden'); });
+      if (mobileArchiveBtn) mobileArchiveBtn.addEventListener('click', () => { showArchive(); mobileMenu.classList.add('hidden'); });
+      if (mobileImagesBtn) mobileImagesBtn.addEventListener('click', () => { showImages(); mobileMenu.classList.add('hidden'); });
+      if (mobileDocumentsBtn) mobileDocumentsBtn.addEventListener('click', () => { showDocuments(); mobileMenu.classList.add('hidden'); });
+
+      showEditor();
+      break;
+    case 'entwickler':
+      feedbackBtn.classList.remove('hidden');
+      exportBtn.classList.remove('hidden');
+      if (conversationsBtn) conversationsBtn.classList.remove('hidden');
+
+      // Mobile
+      if (mobileFeedbackBtn) mobileFeedbackBtn.classList.remove('hidden');
+      if (mobileExportBtn) mobileExportBtn.classList.remove('hidden');
+      if (mobileConversationsBtn) mobileConversationsBtn.classList.remove('hidden');
+
+      feedbackBtn.addEventListener('click', showFeedback);
+
+      // Mobile events
+      if (mobileFeedbackBtn) mobileFeedbackBtn.addEventListener('click', () => { showFeedback(); mobileMenu.classList.add('hidden'); });
+
+      showFeedback();
+      break;
+    default:
+      // Fallback for unknown roles
+      console.log('Unknown role, hiding all views');
       editorView.classList.add('hidden');
       questionsView.classList.add('hidden');
       archiveView.classList.add('hidden');
@@ -289,202 +474,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       feedbackView.classList.add('hidden');
       imagesView.classList.add('hidden');
       documentsView.classList.add('hidden');
-      if (conversationsView) conversationsView.classList.add('hidden');
-      document.getElementById('backup-create')?.classList.add('hidden');
-      document.getElementById('backup-import')?.classList.add('hidden');
-      updateButtonStyles(backupBtn);
+      conversationsView.classList.add('hidden');
+      statsView.classList.add('hidden');
+  }
+
+  // --- Always-on Event Listeners & Initializations ---
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await fetchAndParse('/api/admin/logout', { method: 'POST' });
+      sessionStorage.removeItem('userRole');
+      window.location.href = '/login/';
+    } catch (err) {
+      console.error('Logout error:', err);
     }
-
-    function updateButtonStyles(activeButton) {
-      const buttons = [editorBtn, questionsBtn, archiveBtn, userBtn, feedbackBtn, exportBtn, backupBtn, imagesBtn, documentsBtn, conversationsBtn, statsBtn];
-     buttons.forEach(btn => {
-       if (btn) btn.classList.remove('active');
-     });
-     if (activeButton) activeButton.classList.add('active');
-
-     // Mobile buttons
-      const mobileButtons = [mobileEditorBtn, mobileQuestionsBtn, mobileArchiveBtn, mobileUserBtn, mobileFeedbackBtn, mobileExportBtn, mobileBackupBtn, mobileImagesBtn, mobileConversationsBtn, mobileStatsBtn];
-     mobileButtons.forEach(btn => {
-       if (btn) btn.classList.remove('active');
-     });
-     // Map desktop to mobile
-     const mobileMap = {
-       [editorBtn]: mobileEditorBtn,
-       [questionsBtn]: mobileQuestionsBtn,
-       [archiveBtn]: mobileArchiveBtn,
-       [userBtn]: mobileUserBtn,
-       [feedbackBtn]: mobileFeedbackBtn,
-        [exportBtn]: mobileExportBtn,
-        [backupBtn]: mobileBackupBtn,
-         [imagesBtn]: mobileImagesBtn,
-        [documentsBtn]: mobileDocumentsBtn,
-        [conversationsBtn]: mobileConversationsBtn,
-       [statsBtn]: mobileStatsBtn
-     };
-     if (mobileMap[activeButton]) mobileMap[activeButton].classList.add('active');
-   }
-
-    // --- Role-based UI Setup ---
-    const userRole = sessionStorage.getItem('userRole');
-
-   // Hide all role-dependent buttons by default
-   editorBtn.classList.add('hidden');
-   questionsBtn.classList.add('hidden');
-   archiveBtn.classList.add('hidden');
-   userBtn.classList.add('hidden');
-   feedbackBtn.classList.add('hidden');
-    if(imagesBtn) imagesBtn.classList.add('hidden');
-    if(documentsBtn) documentsBtn.classList.add('hidden');
-    if(conversationsBtn) conversationsBtn.classList.add('hidden');
-
-   // Mobile buttons
-   if(mobileEditorBtn) mobileEditorBtn.classList.add('hidden');
-   if(mobileQuestionsBtn) mobileQuestionsBtn.classList.add('hidden');
-   if(mobileArchiveBtn) mobileArchiveBtn.classList.add('hidden');
-   if(mobileUserBtn) mobileUserBtn.classList.add('hidden');
-   if(mobileFeedbackBtn) mobileFeedbackBtn.classList.add('hidden');
-    if(mobileImagesBtn) mobileImagesBtn.classList.add('hidden');
-    if(mobileDocumentsBtn) mobileDocumentsBtn.classList.add('hidden');
-   if(mobileConversationsBtn) mobileConversationsBtn.classList.add('hidden');
-   if(mobileStatsBtn) mobileStatsBtn.classList.add('hidden');
-
-   switch (userRole) {
-     case 'admin':
-       editorBtn.classList.remove('hidden');
-       questionsBtn.classList.remove('hidden');
-       archiveBtn.classList.remove('hidden');
-        userBtn.classList.remove('hidden');
-        feedbackBtn.classList.remove('hidden');
-        backupBtn.classList.remove('hidden');
-        if(imagesBtn) imagesBtn.classList.remove('hidden');
-        if(documentsBtn) documentsBtn.classList.remove('hidden');
-        if(conversationsBtn) conversationsBtn.classList.remove('hidden');
-
-       // Mobile
-       if(mobileEditorBtn) mobileEditorBtn.classList.remove('hidden');
-       if(mobileQuestionsBtn) mobileQuestionsBtn.classList.remove('hidden');
-       if(mobileArchiveBtn) mobileArchiveBtn.classList.remove('hidden');
-        if(mobileUserBtn) mobileUserBtn.classList.remove('hidden');
-        if(mobileFeedbackBtn) mobileFeedbackBtn.classList.remove('hidden');
-        if(mobileBackupBtn) mobileBackupBtn.classList.remove('hidden');
-        if(mobileImagesBtn) mobileImagesBtn.classList.remove('hidden');
-        if(mobileDocumentsBtn) mobileDocumentsBtn.classList.remove('hidden');
-        if(mobileConversationsBtn) mobileConversationsBtn.classList.remove('hidden');
-
-       editorBtn.addEventListener('click', showEditor);
-       questionsBtn.addEventListener('click', showQuestions);
-       archiveBtn.addEventListener('click', showArchive);
-          userBtn.addEventListener('click', showUserAdmin);
-          feedbackBtn.addEventListener('click', showFeedback);
-          backupBtn.addEventListener('click', showBackup);
-         if(imagesBtn) imagesBtn.addEventListener('click', showImages);
-         if(documentsBtn) documentsBtn.addEventListener('click', showDocuments);
-
-        // Mobile events
-       if(mobileEditorBtn) mobileEditorBtn.addEventListener('click', () => { showEditor(); mobileMenu.classList.add('hidden'); });
-       if(mobileQuestionsBtn) mobileQuestionsBtn.addEventListener('click', () => { showQuestions(); mobileMenu.classList.add('hidden'); });
-       if(mobileArchiveBtn) mobileArchiveBtn.addEventListener('click', () => { showArchive(); mobileMenu.classList.add('hidden'); });
-        if(mobileUserBtn) mobileUserBtn.addEventListener('click', () => { showUserAdmin(); mobileMenu.classList.add('hidden'); });
-          if(mobileFeedbackBtn) mobileFeedbackBtn.addEventListener('click', () => { showFeedback(); mobileMenu.classList.add('hidden'); });
-          if(mobileBackupBtn) mobileBackupBtn.addEventListener('click', () => { showBackup(); mobileMenu.classList.add('hidden'); });
-         if(mobileImagesBtn) mobileImagesBtn.addEventListener('click', () => { showImages(); mobileMenu.classList.add('hidden'); });
-         if(mobileDocumentsBtn) mobileDocumentsBtn.addEventListener('click', () => { showDocuments(); mobileMenu.classList.add('hidden'); });
-
-        showEditor();
-       break;
-     case 'editor':
-       editorBtn.classList.remove('hidden');
-       questionsBtn.classList.remove('hidden');
-       archiveBtn.classList.remove('hidden');
-        if(imagesBtn) imagesBtn.classList.remove('hidden');
-        if(documentsBtn) documentsBtn.classList.remove('hidden');
-
-        // Mobile
-       if(mobileEditorBtn) mobileEditorBtn.classList.remove('hidden');
-       if(mobileQuestionsBtn) mobileQuestionsBtn.classList.remove('hidden');
-        if(mobileArchiveBtn) mobileArchiveBtn.classList.remove('hidden');
-        if(mobileImagesBtn) mobileImagesBtn.classList.remove('hidden');
-        if(mobileDocumentsBtn) mobileDocumentsBtn.classList.remove('hidden');
-
-        editorBtn.addEventListener('click', showEditor);
-       questionsBtn.addEventListener('click', showQuestions);
-       archiveBtn.addEventListener('click', showArchive);
-        if(imagesBtn) imagesBtn.addEventListener('click', showImages);
-        if(documentsBtn) documentsBtn.addEventListener('click', showDocuments);
-
-        // Mobile events
-       if(mobileEditorBtn) mobileEditorBtn.addEventListener('click', () => { showEditor(); mobileMenu.classList.add('hidden'); });
-       if(mobileQuestionsBtn) mobileQuestionsBtn.addEventListener('click', () => { showQuestions(); mobileMenu.classList.add('hidden'); });
-       if(mobileArchiveBtn) mobileArchiveBtn.addEventListener('click', () => { showArchive(); mobileMenu.classList.add('hidden'); });
-        if(mobileImagesBtn) mobileImagesBtn.addEventListener('click', () => { showImages(); mobileMenu.classList.add('hidden'); });
-        if(mobileDocumentsBtn) mobileDocumentsBtn.addEventListener('click', () => { showDocuments(); mobileMenu.classList.add('hidden'); });
-
-        showEditor();
-       break;
-     case 'entwickler':
-       feedbackBtn.classList.remove('hidden');
-       exportBtn.classList.remove('hidden');
-       if(conversationsBtn) conversationsBtn.classList.remove('hidden');
-
-       // Mobile
-       if(mobileFeedbackBtn) mobileFeedbackBtn.classList.remove('hidden');
-       if(mobileExportBtn) mobileExportBtn.classList.remove('hidden');
-       if(mobileConversationsBtn) mobileConversationsBtn.classList.remove('hidden');
-
-        feedbackBtn.addEventListener('click', showFeedback);
-
-        // Mobile events
-        if(mobileFeedbackBtn) mobileFeedbackBtn.addEventListener('click', () => { showFeedback(); mobileMenu.classList.add('hidden'); });
-
-        showFeedback();
-        break;
-     default:
-       // Fallback for unknown roles
-       console.log('Unknown role, hiding all views');
-       editorView.classList.add('hidden');
-       questionsView.classList.add('hidden');
-       archiveView.classList.add('hidden');
-       userView.classList.add('hidden');
-       feedbackView.classList.add('hidden');
-        imagesView.classList.add('hidden');
-        documentsView.classList.add('hidden');
-        conversationsView.classList.add('hidden');
-        statsView.classList.add('hidden');
-     }
-
-   // --- Always-on Event Listeners & Initializations ---
-   logoutBtn.addEventListener('click', async () => {
-     try {
-       await fetchAndParse('/api/admin/logout', { method: 'POST' });
-       sessionStorage.removeItem('userRole');
-        window.location.href = '/login/';
-     } catch (err) {
-       console.error('Logout error:', err);
-     }
-   });
-   if(mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', async () => {
-     try {
-     await fetchAndParse('/api/admin/logout', { method: 'POST' });
-       sessionStorage.removeItem('userRole');
-        window.location.href = '/login/';
-     } catch (err) {
-       console.error('Logout error:', err);
-     }
-   });
+  });
+  if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', async () => {
+    try {
+      await fetchAndParse('/api/admin/logout', { method: 'POST' });
+      sessionStorage.removeItem('userRole');
+      window.location.href = '/login/';
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  });
 
   // Initialize all modules
   initArticles();
+  initUsers();
   const questionsManager = initQuestions({ updateOpenCount, showEditor });
-   initArchive();
+  initArchive();
 
-   initBackup();
-   setupFeedback();
+  initBackup();
+  setupFeedback();
   initImages();
   initDocuments();
-   if (window.initConversations) {
-     initConversations(showConversations);
-   }
-  
+  if (window.initConversations) {
+    initConversations(showConversations);
+  }
+
   document.addEventListener('update-username', (e) => {
     const currentUserSpan = document.getElementById('last-edited-by');
     if (currentUserSpan) {
@@ -518,8 +545,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const headline = document.getElementById('headline-input').value;
         const answeredInDiv = document.getElementById('question-answered-in');
         if (answeredInDiv) {
-            answeredInDiv.innerHTML = `<strong>Beantwortet in:</strong> ${headline}`;
-            answeredInDiv.style.display = 'block';
+          answeredInDiv.innerHTML = `<strong>Beantwortet in:</strong> ${headline}`;
+          answeredInDiv.style.display = 'block';
         }
         await loadEntry(articleId);
       } catch (err) {

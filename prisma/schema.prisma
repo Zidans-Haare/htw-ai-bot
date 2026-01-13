@@ -1,5 +1,3 @@
-// To switch DBs: Change provider in datasource (e.g., "postgresql" or "mysql"), update DATABASE_URL env (e.g., postgres://user:pass@host/db?schema=public for Postgres; mysql://user:pass@host/db for MySQL), then run npx prisma db push && npx prisma generate.
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["views"]
@@ -20,6 +18,7 @@ model article_views {
   updated_at       DateTime       @updatedAt
   hochschuhl_abc   hochschuhl_abc @relation(fields: [article_id], references: [id], onDelete: NoAction)
   user             users?         @relation(fields: [user_id], references: [id])
+
   @@map("article_views")
 }
 
@@ -31,22 +30,23 @@ model auth_sessions {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@map("auth_sessions")
 }
 
 model chat_interactions {
-  id               Int                        @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   session_id       String
   question         String
   answer           String?
-  was_successful   Boolean?                   @default(false)
+  was_successful   Boolean?      @default(false)
   response_time_ms Int?
   tokens_used      Int?
   timestamp        DateTime?
   error_message    String?
-  created_at       DateTime                   @default(now())
-  updated_at       DateTime                   @updatedAt
-  user_sessions    user_sessions              @relation(fields: [session_id], references: [session_id], onDelete: NoAction)
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  user_sessions    user_sessions @relation(fields: [session_id], references: [session_id], onDelete: NoAction)
 }
 
 model conversations {
@@ -54,37 +54,37 @@ model conversations {
   anonymous_user_id String
   category          String?    @default("Unkategorisiert")
   ai_confidence     Float?
-  created_at        DateTime
+  created_at        DateTime @default(now())
   updated_at        DateTime   @updatedAt
   messages          messages[]
 }
 
 model daily_question_stats {
-  id                  Int       @id @default(autoincrement())
+  id                  Int      @id @default(autoincrement())
   analysis_date       String
   normalized_question String
   question_count      Int
   topic               String?
   languages_detected  String?
   original_questions  String?
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @updatedAt
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 }
 
 model daily_unanswered_stats {
-  id                  Int       @id @default(autoincrement())
+  id                  Int      @id @default(autoincrement())
   analysis_date       String
   normalized_question String
   question_count      Int
   topic               String?
   languages_detected  String?
   original_questions  String?
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @updatedAt
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 }
 
 model feedback {
-  id                    Int       @id @default(autoincrement())
+  id                    Int      @id @default(autoincrement())
   user_id               String?
   text                  String
   email                 String?
@@ -94,24 +94,28 @@ model feedback {
   submitted_at          DateTime @default(now())
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
-  user                  users?    @relation(fields: [user_id], references: [id])
+  user                  users?   @relation(fields: [user_id], references: [id])
+
   @@map("feedback")
 }
 
 model hochschuhl_abc {
-  id            Int                        @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   article       String
   description   String?
   editor        String?
-  active        Boolean?                   @default(true)
+  active        Boolean?        @default(true)
+  access_level  String          @default("employee")
   archived      DateTime?
-  created_at    DateTime                   @default(now())
-  updated_at    DateTime                   @updatedAt
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
   article_views article_views[]
-  questions     questions[]
   documents     documents[]
+  questions     questions[]
+
   @@map("hochschuhl_abc")
 }
+
 model images {
   id          Int      @id @default(autoincrement())
   filename    String   @unique
@@ -126,51 +130,50 @@ model messages {
   conversation_id String
   role            String
   content         String
-  created_at      DateTime
+  created_at      DateTime @default(now())
   updated_at      DateTime      @updatedAt
   conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
 }
 
 model page_views {
-  id        Int       @id @default(autoincrement())
-  path      String    @default("/")
-  timestamp DateTime?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         Int       @id @default(autoincrement())
+  path       String    @default("/")
+  timestamp  DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 }
 
-
-
 model question_analysis_cache {
-  id                  Int                        @id @default(autoincrement())
+  id                  Int      @id @default(autoincrement())
   cache_key           String
   normalized_question String
-  question_count      Int?                       @default(1)
+  question_count      Int?     @default(1)
   topic               String?
   languages_detected  String?
   original_questions  String
-  is_processing       Boolean?                   @default(false)
-  created_at          DateTime                   @default(now())
-  updated_at          DateTime                   @updatedAt
+  is_processing       Boolean? @default(false)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 }
 
 model questions {
-  id                Int                        @id @default(autoincrement())
+  id                Int             @id @default(autoincrement())
   question          String
   answer            String?
   user              String?
   category_id       Int?
-  archived          Boolean?                   @default(false)
+  archived          Boolean?        @default(false)
   linked_article_id Int?
-  answered          Boolean?                   @default(false)
-  spam              Boolean?                   @default(false)
-  deleted           Boolean?                   @default(false)
+  answered          Boolean?        @default(false)
+  spam              Boolean?        @default(false)
+  deleted           Boolean?        @default(false)
   translation       String?
   feedback          String?
   answered_at       DateTime?
-  created_at        DateTime                   @default(now())
-  updated_at        DateTime                   @updatedAt
-  hochschuhl_abc    hochschuhl_abc?            @relation(fields: [linked_article_id], references: [id])
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+  hochschuhl_abc    hochschuhl_abc? @relation(fields: [linked_article_id], references: [id])
+
   @@map("questions")
 }
 
@@ -198,34 +201,33 @@ model user_sessions {
 }
 
 model users {
-  id            String         @id @default(cuid())
-  username      String         @unique
+  id            String          @id @default(cuid())
+  username      String          @unique
   password      String
-  role          String         @default("editor")
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
-  feedback      feedback[]
+  role          String          @default("employee")
+  permissions   Json            @default("[]")
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
   article_views article_views[]
   auth_sessions auth_sessions[]
+  feedback      feedback[]
   user_profiles user_profiles?
 }
 
 model documents {
-  id          Int                        @id @default(autoincrement())
-  article_id  Int?
-  filepath    String
-  file_type   String
-  description String?
-  uploaded_at DateTime                   @default(now())
-  created_at  DateTime                   @default(now())
-  updated_at  DateTime                   @updatedAt
-  hochschuhl_abc hochschuhl_abc?         @relation(fields: [article_id], references: [id])
+  id             Int             @id @default(autoincrement())
+  article_id     Int?
+  filepath       String
+  file_type      String
+  description    String?
+  access_level   String          @default("employee")
+  uploaded_at    DateTime        @default(now())
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  hochschuhl_abc hochschuhl_abc? @relation(fields: [article_id], references: [id])
+
   @@map("documents")
 }
-
-
-
-
 
 model app_versions {
   id      Int    @id @default(autoincrement())
@@ -233,15 +235,33 @@ model app_versions {
 }
 
 model user_profiles {
-  id                 String   @id @default(cuid())
-  user_id            String   @unique
-  display_name       String?
-  mensa_preferences  Json     @default("{}")
-  favorite_prompts   Json     @default("[]")
-  shortcuts          Json     @default("[]")
-  ui_settings        Json     @default("{}")
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
-  user               users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  user_id           String   @unique
+  display_name      String?
+  mensa_preferences Json     @default("{}")
+  favorite_prompts  Json     @default("[]")
+  shortcuts         Json     @default("[]")
+  ui_settings       Json     @default("{}")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  user              users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@map("user_profiles")
+}
+
+model McpServer {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  type      String
+  command   Json?
+  url       String?
+  headers   Json?
+  env       Json?
+  enabled   Boolean  @default(true)
+  timeout   Int?     @default(10000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  testQuery String?
+
+  @@map("mcp_servers")
 }

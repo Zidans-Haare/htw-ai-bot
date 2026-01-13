@@ -1,4 +1,21 @@
-const OpenAI = require('openai');
+const path = require('path');
+const { execSync } = require('child_process');
+const { convertToolsToProvider, convertToolCallsFromProvider } = require('./toolConverter');
+
+let OpenAI;
+try {
+  OpenAI = require('openai');
+} catch (error) {
+  if (error.code === 'MODULE_NOT_FOUND') {
+    console.log('OpenAI module not found. Installing automatically...');
+    const projectRoot = path.resolve(__dirname, '../../..');
+    execSync('npm install openai', { stdio: 'inherit', cwd: projectRoot });
+    OpenAI = require('openai');
+    console.log('OpenAI module installed and loaded successfully.');
+  } else {
+    throw error;
+  }
+}
 
 let sharedClient = null;
 
@@ -8,7 +25,7 @@ function getClient(explicitKey = null, backend = false) {
   if (!apiKey) {
     throw new Error(`${prefix}AI_OPENAI_API_KEY or ${prefix}AI_API_KEY environment variable not set.`);
   }
-  const baseURL = process.env[prefix + 'AI_OPENAI_BASE_URL'] || 'https://api.openai.com/v1';
+  const baseURL = process.env[prefix + 'AI_OPENAI_BASE_URL'] || process.env[prefix + 'AI_BASE_URL'] || 'https://api.openai.com/v1';
 
   if (explicitKey) {
     return new OpenAI({ apiKey, baseURL });
@@ -28,14 +45,26 @@ async function chatCompletion(messages, options = {}) {
   const temperature = options.temperature || parseFloat(process.env[prefix + 'AI_TEMPERATURE']);
   const maxTokens = options.maxTokens || parseInt(process.env[prefix + 'AI_MAX_TOKENS']);
 
-  const response = await client.chat.completions.create({
+  const request = {
     model,
     messages,
     temperature,
     max_tokens: maxTokens,
-  });
+  };
 
-  return { content: response.choices[0].message.content };
+  if (options.tools && options.tools.length > 0) {
+    request.tools = convertToolsToProvider(options.tools, 'openai'); // Uses abstraction layer
+    request.tool_choice = options.tool_choice || 'auto';
+  }
+
+  const response = await client.chat.completions.create(request);
+
+  const message = response.choices[0].message;
+  return {
+    content: message.content,
+    tool_calls: message.tool_calls,
+    finish_reason: response.choices[0].finish_reason,
+  };
 }
 
 async function* chatCompletionStream(messages, options = {}) {
@@ -64,4 +93,5 @@ async function* chatCompletionStream(messages, options = {}) {
 module.exports = {
   chatCompletion,
   chatCompletionStream,
+  getClient,
 };

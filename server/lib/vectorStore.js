@@ -142,7 +142,7 @@ class VectorStoreManager {
     this.lastSync = new Date(0);
     try {
       this.lastSync = new Date(fs.readFileSync('.vectordb_last_sync', 'utf8'));
-    } catch (e) {}
+    } catch (e) { }
     this.store = null;
     this.graphData = null;
     this.splitter = new RecursiveCharacterTextSplitter({
@@ -313,7 +313,7 @@ class VectorStoreManager {
     let docxCount = 0, mdCount = 0, odtCount = 0, xlsxCount = 0, odpCount = 0, odsCount = 0;
 
     // Fetch changed headlines
-    const changedHeadlines = await HochschuhlABC.findMany({ where: { updated_at: { gt: this.lastSync } }, select: { id: true, article: true, description: true, active: true } });
+    const changedHeadlines = await HochschuhlABC.findMany({ where: { updated_at: { gt: this.lastSync } }, select: { id: true, article: true, description: true, active: true, access_level: true } });
     for (const h of changedHeadlines) {
       if (h.active) {
         // Delete old vectors
@@ -328,6 +328,7 @@ class VectorStoreManager {
             metadata: {
               source: 'headline',
               id: h.id,
+              access_level: h.access_level || 'employee',
               chunkIndex: i
             }
           }));
@@ -371,57 +372,59 @@ class VectorStoreManager {
                 articleId: doc.article_id,
                 documentId: doc.id,
                 fileType: doc.file_type,
+                access_level: doc.access_level || 'employee',
                 chunkIndex: i
               }
             }));
           }
         }
       } else
-      if (doc.file_type === 'docx') {
-        loader = new DocxLoader(fullPath);
-        docxCount++;
-      } else if (doc.file_type === 'md') {
-        loader = new UnstructuredLoader(fullPath);
-        mdCount++;
-      } else if (['odt', 'ods', 'odp'].includes(doc.file_type)) {
-        loader = new UnstructuredLoader(fullPath);
-        if (doc.file_type === 'odt') odtCount++;
-        else if (doc.file_type === 'ods') odsCount++;
-        else odpCount++;
-      } else if (doc.file_type === 'xlsx') {
-        loader = new UnstructuredLoader(fullPath);
-        xlsxCount++;
-       } else {
-         continue; // unsupported
-       }
-       if (loader) {
-         try {
-           const loadedDocs = await loader.load();
-           for (const d of loadedDocs) {
-             let pageContent = d.pageContent;
-             if (doc.hochschuhl_abc && doc.hochschuhl_abc.active) {
-               pageContent = `${doc.hochschuhl_abc.article}\n${doc.hochschuhl_abc.description || ''}\n${pageContent}`;
-             }
-             pageContent = sanitizeHtml(pageContent);
-             const chunks = await this.pdfSplitter.splitText(pageContent);
-             for (let i = 0; i < chunks.length; i++) {
-               docs.push(new Document({
-                 pageContent: chunks[i],
-                 metadata: {
-                   ...d.metadata,
-                   source: 'document',
-                   articleId: doc.article_id,
-                   documentId: doc.id,
-                   fileType: doc.file_type,
-                   chunkIndex: i
-                 }
-               }));
-             }
-           }
-         } catch (err) {
-           logger.error(`Failed to load document ${doc.id}: ${err.message}`);
-         }
-       }
+        if (doc.file_type === 'docx') {
+          loader = new DocxLoader(fullPath);
+          docxCount++;
+        } else if (doc.file_type === 'md') {
+          loader = new UnstructuredLoader(fullPath);
+          mdCount++;
+        } else if (['odt', 'ods', 'odp'].includes(doc.file_type)) {
+          loader = new UnstructuredLoader(fullPath);
+          if (doc.file_type === 'odt') odtCount++;
+          else if (doc.file_type === 'ods') odsCount++;
+          else odpCount++;
+        } else if (doc.file_type === 'xlsx') {
+          loader = new UnstructuredLoader(fullPath);
+          xlsxCount++;
+        } else {
+          continue; // unsupported
+        }
+      if (loader) {
+        try {
+          const loadedDocs = await loader.load();
+          for (const d of loadedDocs) {
+            let pageContent = d.pageContent;
+            if (doc.hochschuhl_abc && doc.hochschuhl_abc.active) {
+              pageContent = `${doc.hochschuhl_abc.article}\n${doc.hochschuhl_abc.description || ''}\n${pageContent}`;
+            }
+            pageContent = sanitizeHtml(pageContent);
+            const chunks = await this.pdfSplitter.splitText(pageContent);
+            for (let i = 0; i < chunks.length; i++) {
+              docs.push(new Document({
+                pageContent: chunks[i],
+                metadata: {
+                  ...d.metadata,
+                  source: 'document',
+                  articleId: doc.article_id,
+                  documentId: doc.id,
+                  fileType: doc.file_type,
+                  access_level: doc.access_level || 'employee',
+                  chunkIndex: i
+                }
+              }));
+            }
+          }
+        } catch (err) {
+          logger.error(`Failed to load document ${doc.id}: ${err.message}`);
+        }
+      }
     }
 
     // Fetch changed images
@@ -469,11 +472,15 @@ class VectorStoreManager {
     return stats;
   }
 
-  async similaritySearch(query, k = parseInt(process.env.RETRIEVE_K) || 3) {
+  async similaritySearch(query, k = parseInt(process.env.RETRIEVE_K) || 3, filter = undefined) {
     const end = retrievalDuration.startTimer();
     if (!this.store) return [];
     try {
-      const results = await this.store.similaritySearchWithScore(query, k);
+      if (filter && process.env.VECTOR_DB_TYPE === 'chroma') {
+        // Chroma requires distinct filter syntax if passing $in
+        // But langchainjs might handle it. Let's assume passed filter is compatible or we construct it.
+      }
+      const results = await this.store.similaritySearchWithScore(query, k, filter);
       const minSimilarity = parseFloat(process.env.MIN_SIMILARITY) || 0.7;
       const filtered = results.filter(([doc, score]) => score >= minSimilarity).map(([doc, score]) => ({ ...doc, score }));
       end();

@@ -61,7 +61,7 @@ module.exports = (authMiddleware) => {
 
             try {
                 // Extract description from the request body
-                const { description } = req.body;
+                const { description, access_level } = req.body;
 
                 // Determine file type
                 const ext = path.extname(req.file.originalname).toLowerCase();
@@ -81,7 +81,8 @@ module.exports = (authMiddleware) => {
                 const docData = {
                     filepath: req.file.filename,
                     file_type: fileType,
-                    description: description || null
+                    description: description || null,
+                    access_level: access_level || 'employee'
                 };
                 const newDocument = await Documents.create({
                     data: docData
@@ -104,16 +105,20 @@ module.exports = (authMiddleware) => {
     // PUT (update) a document description
     router.put('/documents/:id', authMiddleware, async (req, res) => {
         const { id } = req.params;
-        const { description } = req.body;
+        const { description, access_level } = req.body;
 
-        if (typeof description !== 'string') {
-            return res.status(400).json({ message: 'Ungültige Beschreibung.' });
+        const updateData = {};
+        if (typeof description === 'string') updateData.description = description.trim();
+        if (access_level) updateData.access_level = access_level;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: 'Keine Daten zum Aktualisieren.' });
         }
 
         try {
             const updatedDocument = await Documents.update({
                 where: { id: parseInt(id) },
-                data: { description: description.trim() }
+                data: updateData
             });
 
             res.status(200).json(updatedDocument);

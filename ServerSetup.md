@@ -121,21 +121,26 @@ Hinweis (Debian): Manche Minimal-Images liefern `sudo` nicht mit. In dem Fall zu
    - Befehl: `sudo nano /etc/nginx/sites-available/htw-ai-bot`
    - Grund: Erstellt die Proxy-Konfiguration fuer die neue Domain.
 4. Proxy-Konfiguration einfuegen
-   - Inhalt:
-     ```nginx
-     server {
-         listen 80;
-         server_name neue-domain.tld;
+    - Inhalt:
+      ```nginx
+      server {
+          listen 80;
+          server_name neue-domain.tld;
+          client_max_body_size 50m;
 
-         location / {
-             proxy_pass http://127.0.0.1:3000;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-             proxy_set_header X-Forwarded-Proto $scheme;
-         }
-     }
-     ```
+          location / {
+              proxy_pass http://127.0.0.1:3000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_buffering on;
+              proxy_buffer_size 128k;
+              proxy_buffers 8 128k;
+              proxy_read_timeout 300;
+          }
+      }
+      ```
    - Grund: Leitet eingehende Anfragen an den Node.js-Port weiter (Domain anpassen).
 5. Site aktivieren
    - Befehl: `sudo ln -s /etc/nginx/sites-available/htw-ai-bot /etc/nginx/sites-enabled/`

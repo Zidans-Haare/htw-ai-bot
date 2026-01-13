@@ -3,7 +3,8 @@ const router = express.Router();
 
 module.exports = (adminAuth) => {
   router.get('/users', adminAuth, async (req, res) => {
-    if (req.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
+    // Allow admin and manager to view users
+    if (req.role !== 'admin' && req.role !== 'manager') return res.status(403).json({ error: 'forbidden' });
     const offset = parseInt(req.query.offset) || 0;
     const auth = require('../authController.cjs');
     const users = await auth.listUsers(offset);
@@ -39,11 +40,25 @@ module.exports = (adminAuth) => {
     }
   });
 
+  router.put('/users/:id', adminAuth, async (req, res) => {
+    if (req.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
+    const { id } = req.params;
+    const { role, permissions } = req.body;
+    try {
+      const auth = require('../authController.cjs');
+      const updatedUser = await auth.updateUserPermissions(id, role, permissions);
+      res.json(updatedUser);
+    } catch (err) {
+      console.error(`Failed to update user ${id}`, err);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+
   router.delete('/users/:username', adminAuth, async (req, res) => {
     if (req.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
     const { username } = req.params;
     if (req.user === username) {
-        return res.status(400).json({ error: 'cannot delete self' });
+      return res.status(400).json({ error: 'cannot delete self' });
     }
     try {
       const auth = require('../authController.cjs');

@@ -38,7 +38,7 @@ async function categorizeConversation(messages) {
       return null;
     }
 
-    const cleaned = rawText.replace(/^```json\s*|```\s*$/g, '');
+    const cleaned = rawText.replace(/^\`\`\`json\s*|\`\`\`\s*$/g, '');
     const data = JSON.parse(cleaned);
 
     if (data && data.category && typeof data.confidence === 'number') {
@@ -59,4 +59,3 @@ async function categorizeConversation(messages) {
 }
 
 module.exports = { categorizeConversation };
-

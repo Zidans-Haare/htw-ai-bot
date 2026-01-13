@@ -31,6 +31,29 @@ export async function sendMsg(app, promptText) {
     let currentConversationId = app.conversationId;
     let tokensInfo = null;
 
+    function displayAiMessage() {
+        const messageWrapper = document.createElement('div');
+        messageWrapper.className = 'message ai';
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        const avatarSrc = app.useFirstAvatar ? '/assets/images/smoky_klein.png' : '/assets/images/stu_klein.png';
+        avatar.innerHTML = `<img src="${avatarSrc}" alt="Bot Avatar" />`;
+        app.useFirstAvatar = !app.useFirstAvatar;
+        messageWrapper.appendChild(avatar);
+
+        aiMessageBubble = document.createElement('div');
+        aiMessageBubble.className = 'bubble';
+        aiMessageBubble.innerHTML = '<span></span>';
+        messageWrapper.appendChild(aiMessageBubble);
+        document.getElementById('messages').appendChild(messageWrapper);
+
+        aiMessageBubble.querySelector('span').innerHTML = renderMarkup(fullResponse);
+        processImagesInBubble(aiMessageBubble);
+        app.scrollToBottom();
+
+        finalizeMessage();
+    }
+
     function finalizeMessage() {
         if (aiMessageBubble) {
             const c = document.createElement('span');
@@ -56,67 +79,64 @@ export async function sendMsg(app, promptText) {
     }
 
     try {
-        const headers = { 'Content-Type': 'application/json' };
         const userApiKey = localStorage.getItem('user_api_key');
-        if (userApiKey) {
-            headers['X-User-API-Key'] = userApiKey;
-        }
-
-        const bodyPayload = {
-            prompt: txt,
-            conversationId: currentConversationId,
-            anonymousUserId: app.anonymousUserId,
-            timezoneOffset: new Date().getTimezoneOffset(),
-        };
-
-        if (app?.auth?.profile?.mensaPreferences) {
-            bodyPayload.profilePreferences = app.auth.profile.mensaPreferences;
-        }
-        if (app?.auth?.profile?.displayName) {
-            bodyPayload.userDisplayName = app.auth.profile.displayName;
-        }
+        const headers = { 'Content-Type': 'application/json' };
+        if (userApiKey) headers['X-User-API-Key'] = userApiKey;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: headers,
-            body: JSON.stringify(bodyPayload)
+            headers,
+            body: JSON.stringify({
+                prompt: txt,
+                conversationId: currentConversationId,
+                anonymousUserId: app.anonymousUserId,
+                timezoneOffset: new Date().getTimezoneOffset(),
+                profilePreferences: JSON.stringify(app?.auth?.profile?.mensaPreferences || {}),
+                userDisplayName: app?.auth?.profile?.displayName || '',
+            })
         });
 
-        const responseData = await response.json();
-        if (!response.ok) {
-            throw new Error(responseData.error || 'Fehler bei der Verbindung zum Server.');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
 
-        document.getElementById('typing').style.display = 'none';
-
-        currentConversationId = responseData.conversationId;
+        const data = await response.json();
+        fullResponse = data.response || '';
+        tokensInfo = data.tokens || null;
+        currentConversationId = data.conversationId || currentConversationId;
         if (isNewChat) {
             app.conversationId = currentConversationId;
         }
 
-        const messageWrapper = document.createElement('div');
-        messageWrapper.className = 'message ai';
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        const avatarSrc = app.useFirstAvatar ? '/assets/images/smoky_klein.png' : '/assets/images/stu_klein.png';
-        avatar.innerHTML = `<img src="${avatarSrc}" alt="Bot Avatar" />`;
-        app.useFirstAvatar = !app.useFirstAvatar;
-        messageWrapper.appendChild(avatar);
+        // Show tool usage feedback if tools were called
+        if (data.toolStatuses && data.toolStatuses.length > 0) {
+            const typingEl = document.getElementById('typing');
+            const originalContent = typingEl.innerHTML;
 
-        aiMessageBubble = document.createElement('div');
-        aiMessageBubble.className = 'bubble';
-        aiMessageBubble.innerHTML = '<span></span>';
-        messageWrapper.appendChild(aiMessageBubble);
-        document.getElementById('messages').appendChild(messageWrapper);
+            // Show each tool status message briefly
+            let statusIndex = 0;
+            const showNextStatus = () => {
+                if (statusIndex < data.toolStatuses.length) {
+                    const toolMessage = data.toolStatuses[statusIndex];
+                    typingEl.innerHTML = `<i class="fas fa-tools"></i> ${toolMessage}`;
+                    statusIndex++;
 
-        fullResponse = responseData.response || '';
-        tokensInfo = responseData.tokens || null;
+                    // Show next status after 1.5 seconds, or proceed to AI message
+                    setTimeout(() => {
+                        if (statusIndex < data.toolStatuses.length) {
+                            showNextStatus();
+                        } else {
+                            // All tool statuses shown, now display AI message
+                            typingEl.innerHTML = originalContent;
+                            displayAiMessage();
+                        }
+                    }, 1500);
+                }
+            };
 
-        aiMessageBubble.querySelector('span').innerHTML = renderMarkup(fullResponse);
-        processImagesInBubble(aiMessageBubble);
-        app.scrollToBottom();
-
-        finalizeMessage();
+            showNextStatus();
+        } else {
+            // No tool statuses, display AI message immediately
+            displayAiMessage();
+        }
     } catch (e) {
         console.error(e);
         const errorMessage = e?.message || 'Fehler bei der Verbindung zum Server.';

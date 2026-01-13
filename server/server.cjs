@@ -18,6 +18,7 @@ const { execSync } = require('child_process');
 
 
 // --- Initializations ---
+// Force restart 2
 dotenv.config();
 
 const UPLOAD_LIMIT_MB = parseInt(process.env.UPLOAD_LIMIT_MB) || 10;
@@ -33,18 +34,18 @@ const envSchema = Joi.object({
   ENABLE_GRAPHRAG: Joi.string().valid('true', 'false').default('false'),
   CHROMA_URL: Joi.string().when('VECTOR_DB_TYPE', { is: 'chroma', then: Joi.required() }),
   CHROMA_COLLECTION: Joi.string().when('VECTOR_DB_TYPE', { is: 'chroma', then: Joi.required() }),
-    WEAVIATE_URL: Joi.string().when('VECTOR_DB_TYPE', { is: 'weaviate', then: Joi.required() }),
-    WEAVIATE_COLLECTION: Joi.string().when('VECTOR_DB_TYPE', { is: 'weaviate', then: Joi.required() }),
-    PDF_CHUNK_SIZE: Joi.number().integer().min(100).max(1000).default(300),
-    PDF_EXTRACT_TEXT_ONLY: Joi.string().valid('true', 'false').default('false'),
-    SYNC_BATCH: Joi.number().integer().min(10).max(500).default(100),
-    DISPLAY_TOKEN_USED_FOR_QUERY: Joi.string().valid('true', 'false').default('false'),
-    EMBEDDING_LIBRARY: Joi.string().valid('xenova', 'huggingface').default('xenova'),
-    SESSION_INACTIVITY_TIMEOUT_MINUTES: Joi.number().integer().min(1).max(10080).default(1440),  // 1 min to 1 week
-    SESSION_MAX_DURATION_MINUTES: Joi.number().integer().min(1).max(525600).default(43200),  // 1 min to 1 year
+  WEAVIATE_URL: Joi.string().when('VECTOR_DB_TYPE', { is: 'weaviate', then: Joi.required() }),
+  WEAVIATE_COLLECTION: Joi.string().when('VECTOR_DB_TYPE', { is: 'weaviate', then: Joi.required() }),
+  PDF_CHUNK_SIZE: Joi.number().integer().min(100).max(1000).default(300),
+  PDF_EXTRACT_TEXT_ONLY: Joi.string().valid('true', 'false').default('false'),
+  SYNC_BATCH: Joi.number().integer().min(10).max(500).default(100),
+  DISPLAY_TOKEN_USED_FOR_QUERY: Joi.string().valid('true', 'false').default('false'),
+  EMBEDDING_LIBRARY: Joi.string().valid('xenova', 'huggingface').default('xenova'),
+  SESSION_INACTIVITY_TIMEOUT_MINUTES: Joi.number().integer().min(1).max(10080).default(1440),  // 1 min to 1 week
+  SESSION_MAX_DURATION_MINUTES: Joi.number().integer().min(1).max(525600).default(43200),  // 1 min to 1 year
 
-      BACKUP_PATH: Joi.string().default('backups'),
-      UPLOAD_LIMIT_MB: Joi.number().integer().min(1).max(1000).default(10)
+  BACKUP_PATH: Joi.string().default('backups'),
+  UPLOAD_LIMIT_MB: Joi.number().integer().min(1).max(1000).default(10)
 }).unknown(true);
 
 const { error } = envSchema.validate(process.env);
@@ -77,7 +78,7 @@ process.on('uncaughtException', async (err) => {
 });
 
 // --- Controller Imports (after dotenv) ---
-const { streamChat, getSuggestions, testApiKey } = require('./controllers/aiController.cjs');
+const { streamChat, getSuggestions, testApiKey, getChatHistory } = require('./controllers/aiController.cjs');
 const feedbackController = require('./controllers/feedbackController.cjs');
 const adminController = require('./controllers/adminController.cjs');
 const auth = require('./controllers/authController.cjs');
@@ -95,19 +96,23 @@ app.set('trust proxy', process.env.TRUST_PROXY_COUNT || 2);
 const port = process.env.PORT || 3000;
 
 // Set body parser limits
-app.use(express.json({ limit: `${UPLOAD_LIMIT_MB}mb` }));
-app.use(express.urlencoded({ limit: `${UPLOAD_LIMIT_MB}mb` }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const useHttps = process.argv.includes('-https');
 const isTest = process.argv.includes('--test');
 const isDev = process.argv.includes('-dev');
 
 const STATIC_ASSET_MAX_AGE_SECONDS = 60 * 60 * 24 * 14; // 14 days
 const staticCacheControl = (res, filePath) => {
-  // Cache control removed, handled by Vite
+  if (filePath.endsWith('.html')) {
+    res.set('Cache-Control', 'no-cache, must-revalidate');
+  } else {
+    res.set('Cache-Control', `public, max-age=${STATIC_ASSET_MAX_AGE_SECONDS}, immutable`);
+  }
 };
 const staticAssetOptions = { setHeaders: staticCacheControl };
 const setHtmlNoCache = (res) => {
-  // Cache control removed, handled by Vite
+  res.set('Cache-Control', 'no-cache, must-revalidate');
 };
 
 // CLI options
@@ -175,7 +180,7 @@ if (options.dropVectordb) {
 // --- Logging ---
 const logDir = path.resolve(__dirname, 'logs');
 if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir);
+  fs.mkdirSync(logDir);
 }
 const auditLog = path.resolve(__dirname, 'logs/audit.log');
 function logAction(user, action) {
@@ -187,42 +192,39 @@ function logAction(user, action) {
 
 // --- Security & Rate Limiting ---
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 600,
-    message: { error: 'Too many requests, please try again later.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    trustProxy: parseInt(process.env.TRUST_PROXY_COUNT) || 2,
-    skip: (req) => req.path === '/validate' || req.path === '/admin/validate',
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 600,
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/validate' || req.path === '/admin/validate',
 });
 
 const dashboardLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Higher limit for dashboard API calls
-    standardHeaders: true,
-    legacyHeaders: false,
-    trustProxy: parseInt(process.env.TRUST_PROXY_COUNT) || 2,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Higher limit for dashboard API calls
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const loginLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 20,
-    message: { error: "Too many login attempts from this IP, please try again after an hour" },
-    standardHeaders: true,
-    legacyHeaders: false,
-    trustProxy: parseInt(process.env.TRUST_PROXY_COUNT) || 2,
-    skipSuccessfulRequests: true, // Only count failed login attempts
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  message: { error: "Too many login attempts from this IP, please try again after an hour" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Only count failed login attempts
 });
 
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "data:"],
+      scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https://picsum.photos"],
+      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"]
@@ -260,7 +262,11 @@ app.use((req, res, next) => {
 // Serve main bot page
 app.get('/', (req, res) => {
   setHtmlNoCache(res);
-  res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'bot', 'index.html'));
+  if (process.env.USE_NEW_UI === 'true') {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'new-ui', 'index.html'));
+  } else {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'bot', 'index.html'));
+  }
 });
 
 // --- Protection Middleware ---
@@ -344,6 +350,52 @@ const requireRole = (role, insufficientPath) => async (req, res, next) => {
     return res.redirect(`/login/?redirect=${encodeURIComponent(originalUrl)}`);
   }
 };
+
+const requirePermission = (permission, insufficientPath) => async (req, res, next) => {
+  try {
+    const originalUrl = req.originalUrl || req.baseUrl || req.url;
+    const isDocsRoute = originalUrl.startsWith('/api/docs');
+    const isApiRoute = originalUrl.startsWith('/api/');
+    const redirectToLogin = () => res.redirect(`/login/?redirect=${encodeURIComponent(originalUrl)}`);
+
+    let token = req.cookies[ADMIN_COOKIE_NAME];
+    if (!token && ADMIN_TOKEN_PREFIX) {
+      const legacy = req.cookies[USER_COOKIE_NAME];
+      if (legacy && legacy.startsWith(ADMIN_TOKEN_PREFIX)) {
+        token = legacy;
+      }
+    }
+
+    if (!token) {
+      if (isApiRoute && !isDocsRoute) return res.status(401).json({ error: 'Session expired' });
+      return redirectToLogin();
+    }
+
+    const session = await auth.getSession(token);
+    if (!session) {
+      if (isApiRoute && !isDocsRoute) return res.status(401).json({ error: 'Session expired' });
+      return redirectToLogin();
+    }
+
+    const userPermissions = session.permissions || [];
+    // Super-admin bypass: 'admin' role has all permissions implicitly or we just check check
+    if (session.role === 'admin' || userPermissions.includes(permission)) {
+      req.session = session;
+      return next();
+    }
+
+    if (isApiRoute && !isDocsRoute) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    return res.redirect(insufficientPath);
+
+  } catch (err) {
+    console.error('Auth error:', err);
+    if (req.url.startsWith('/api/')) return res.status(401).json({ error: 'Session error' });
+    return res.redirect('/login/');
+  }
+};
+
 
 const protect = (req, res, next) => {
   // Allow access to login pages and insufficient permissions page
@@ -438,6 +490,7 @@ app.use('/api', adminController(auth.getSession, logAction, {
 }));
 app.use('/api/dashboard', dashboardController);
 app.get("/api/view/articles", viewController.getPublishedArticles);
+app.get('/api/history', getChatHistory);
 
 // --- Dashboard Routes ---
 app.use('/dash', express.static(path.join(__dirname, '..', 'dist', 'src', 'dash'), staticAssetOptions));
@@ -626,78 +679,78 @@ const serverCallback = async () => {
       execSync('npx prisma migrate deploy', { stdio: 'inherit' });
       console.log('✓ Migrations applied');
     }
-    } catch (error) {
-      console.log('Database not found or connection failed, initializing with schema push...');
-      execSync('npx prisma db push', { stdio: 'inherit' });
-      console.log('✓ Database initialized with schema push');
-    }
+  } catch (error) {
+    console.log('Database not found or connection failed, initializing with schema push...');
+    execSync('npx prisma db push', { stdio: 'inherit' });
+    console.log('✓ Database initialized with schema push');
+  }
 
-    // Sync auto-increment sequences if PostgreSQL
-    if (process.env.DATABASE_URL.startsWith('postgres')) {
-      console.log('Syncing auto-increment sequences...');
-      try {
-        const tables = [
-          'hochschuhl_abc', 'questions', 'messages', 'feedback', 'documents', 'images',
-          'article_views', 'page_views', 'daily_question_stats', 'daily_unanswered_stats', 'question_analysis_cache',
-          'token_usage', 'user_sessions', 'chat_interactions', 'users'
-        ];
-        for (const table of tables) {
-          try {
-            const result = await prisma.$queryRawUnsafe(`SELECT MAX(id) as max_id FROM ${table}`);
-            const maxId = result[0]?.max_id || 0;
-            if (typeof maxId === 'number' && maxId >= 0) {
-              await prisma.$queryRawUnsafe(`ALTER SEQUENCE ${table}_id_seq RESTART WITH ${maxId + 1}`);
-              console.log(`✓ Synced sequence for ${table} to ${maxId + 1}`);
-            } else {
-              console.log(`⚠ Skipped ${table}: invalid max_id ${maxId}`);
-            }
-          } catch (err) {
-            console.log(`⚠ Failed to sync ${table}: ${err.message}`);
-          }
-        }
-        console.log('✓ Auto-increment sequences synced');
-      } catch (err) {
-        console.warn('Sequence sync failed (may not be critical):', err.message);
-      }
-    }
-
-    // Update app version
+  // Sync auto-increment sequences if PostgreSQL
+  if (process.env.DATABASE_URL.startsWith('postgres')) {
+    console.log('Syncing auto-increment sequences...');
     try {
-      await prisma.app_versions.upsert({
-        where: { version: currentVersion },
-        update: {},
-        create: { version: currentVersion }
-      });
+      const tables = [
+        'hochschuhl_abc', 'questions', 'messages', 'feedback', 'documents', 'images',
+        'article_views', 'page_views', 'daily_question_stats', 'daily_unanswered_stats', 'question_analysis_cache',
+        'token_usage', 'user_sessions', 'chat_interactions', 'users'
+      ];
+      for (const table of tables) {
+        try {
+          const result = await prisma.$queryRawUnsafe(`SELECT MAX(id) as max_id FROM ${table}`);
+          const maxId = result[0]?.max_id || 0;
+          if (typeof maxId === 'number' && maxId >= 0) {
+            await prisma.$queryRawUnsafe(`ALTER SEQUENCE ${table}_id_seq RESTART WITH ${maxId + 1}`);
+            console.log(`✓ Synced sequence for ${table} to ${maxId + 1}`);
+          } else {
+            console.log(`⚠ Skipped ${table}: invalid max_id ${maxId}`);
+          }
+        } catch (err) {
+          console.log(`⚠ Failed to sync ${table}: ${err.message}`);
+        }
+      }
+      console.log('✓ Auto-increment sequences synced');
+    } catch (err) {
+      console.warn('Sequence sync failed (may not be critical):', err.message);
+    }
+  }
+
+  // Update app version
+  try {
+    await prisma.app_versions.upsert({
+      where: { version: currentVersion },
+      update: {},
+      create: { version: currentVersion }
+    });
+  } catch (error) {
+    console.error('Warning: Could not update app version:', error.message);
+  }
+
+  // Create default admin user if no users exist
+  const userCount = await prisma.users.count();
+  if (userCount === 0) {
+    const hashedPassword = await bcrypt.hash('admin', 10);
+    await prisma.users.create({
+      data: {
+        username: 'admin',
+        password: hashedPassword,
+        role: 'admin',
+      },
+    });
+    console.log('✓ Default admin user created (username: admin, password: admin)');
+  }
+
+  // Sync vector DB if enabled
+  if (process.env.SYNC_ON_START === 'true') {
+    try {
+      const vectorStore = require('./lib/vectorStore');
+      await vectorStore.syncFromDB();
+      console.log('✓ Vector DB synced on startup');
     } catch (error) {
-      console.error('Warning: Could not update app version:', error.message);
+      console.error('Warning: Could not sync vector DB:', error.message);
     }
+  }
 
-    // Create default admin user if no users exist
-    const userCount = await prisma.users.count();
-    if (userCount === 0) {
-      const hashedPassword = await bcrypt.hash('admin', 10);
-      await prisma.users.create({
-        data: {
-          username: 'admin',
-          password: hashedPassword,
-          role: 'admin',
-        },
-      });
-      console.log('✓ Default admin user created (username: admin, password: admin)');
-    }
-
-   // Sync vector DB if enabled
-   if (process.env.SYNC_ON_START === 'true') {
-     try {
-       const vectorStore = require('./lib/vectorStore');
-       await vectorStore.syncFromDB();
-       console.log('✓ Vector DB synced on startup');
-     } catch (error) {
-       console.error('Warning: Could not sync vector DB:', error.message);
-     }
-   }
-
-   // Cleanup expired sessions on startup
+  // Cleanup expired sessions on startup
   try {
     await auth.cleanupExpiredSessions();
     console.log('✓ Expired sessions cleaned up');
@@ -717,19 +770,23 @@ const serverCallback = async () => {
   console.log(`Server is running with ${useHttps ? 'HTTPS' : 'HTTP'} on port ${port}`);
 };
 
-if (!cliMode && !isTest && process.env.NODE_ENV !== 'test') {
-  if (useHttps) {
-    try {
-      const httpsOptions = {
-        key: fs.readFileSync(path.join(os.homedir(), '.ssh', 'key.pem')),
-        cert: fs.readFileSync(path.join(os.homedir(), '.ssh', 'cert.pem'))
-      };
-      https.createServer(httpsOptions, app).listen(port, serverCallback);
-    } catch (e) {
-      console.error("Could not start HTTPS server. Do you have key.pem and cert.pem in your .ssh directory?", e);
-      process.exit(1);
+const startServer = () => {
+  if (!cliMode && !isTest && process.env.NODE_ENV !== 'test') {
+    if (useHttps) {
+      try {
+        const httpsOptions = {
+          key: fs.readFileSync(path.join(os.homedir(), '.ssh', 'key.pem')),
+          cert: fs.readFileSync(path.join(os.homedir(), '.ssh', 'cert.pem'))
+        };
+        https.createServer(httpsOptions, app).listen(port, serverCallback);
+      } catch (e) {
+        console.error("Could not start HTTPS server. Do you have key.pem and cert.pem in your .ssh directory?", e);
+        process.exit(1);
+      }
+    } else {
+      app.listen(port, serverCallback);
     }
-  } else {
-    app.listen(port, serverCallback);
   }
-}
+};
+
+startServer();
