@@ -178,6 +178,7 @@ class VectorStoreManager {
 
   async connect() {
     const type = process.env.VECTOR_DB_TYPE;
+    console.log(`VECTOR_DB_TYPE in connect(): ${type}`);
     if (type === 'none') return;
 
     try {

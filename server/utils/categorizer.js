@@ -1,13 +1,4 @@
-const { getOpenAIClient, DEFAULT_MODEL } = require('./openaiClient');
-
-let clientCache = null;
-
-function getClient() {
-  if (!clientCache) {
-    clientCache = getOpenAIClient();
-  }
-  return clientCache;
-}
+const { chatCompletion } = require('./aiProvider');
 
 const CATEGORIES = [
   'Immatrikulation & Bewerbung',
@@ -36,18 +27,12 @@ async function categorizeConversation(messages) {
   const userPrompt = `Analysiere die folgende Konversation und ordne sie einer der vorgegebenen Kategorien zu. Antworte ausschließlich mit einem JSON-Objekt {"category": "...", "confidence": Zahl}. Die Kategorie muss exakt einer der folgenden Werte sein:\n- ${CATEGORIES.join('\n- ')}\n\nKonversation:\n---\n${conversationText}\n---`;
 
   try {
-    const client = getClient();
-    const completion = await client.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages: [
-        { role: 'system', content: 'Du bist ein Assistent, der Gespräche kategorisiert und ausschließlich JSON zurückgibt.' },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0,
-      max_tokens: 200,
-    });
+    const completionResponse = await chatCompletion([
+      { role: 'system', content: 'Du bist ein Assistent, der Gespräche kategorisiert und ausschließlich JSON zurückgibt.' },
+      { role: 'user', content: userPrompt },
+    ], { model: process.env.AI_MODEL || 'gpt-4o-mini', temperature: 0, maxTokens: 200 });
 
-    const rawText = completion?.choices?.[0]?.message?.content?.trim();
+    const rawText = completionResponse?.content?.trim();
     if (!rawText) {
       console.error('[Categorizer] Empty response from model.');
       return null;
