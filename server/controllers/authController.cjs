@@ -67,7 +67,7 @@ async function getSession(token) {
   try {
     const session = await AuthSession.findFirst({
       where: { token },
-      include: { user: { select: { id: true, username: true, role: true, permissions: true } } }
+      include: { user: { select: { id: true, username: true, role: true } } }
     });
     if (!session) {
       return null;
@@ -105,8 +105,7 @@ async function getSession(token) {
     return {
       userId: session.user.id,
       username: session.user.username,
-      role: session.user.role,
-      permissions: session.user.permissions
+      role: session.user.role
     };
   } catch (err) {
     console.error('Get session error:', err);
@@ -137,7 +136,7 @@ async function verifyUser(username, password) {
     if (!user) return null;
     const match = await bcrypt.compare(password, user.password);
     if (!match) return null;
-    return { id: user.id, username: user.username, role: user.role, permissions: user.permissions };
+    return { id: user.id, username: user.username, role: user.role };
   } catch (err) {
     console.error('Verify user error:', err);
     throw err;
@@ -147,9 +146,9 @@ async function verifyUser(username, password) {
 async function createUser(username, password, role = 'user', permissions = []) {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ data: { username, password: hashedPassword, role, permissions } });
+    const user = await User.create({ data: { username, password: hashedPassword, role } });
     await ensureUserProfile(user.id);
-    return { id: user.id, username: user.username, role: user.role, permissions: user.permissions };
+    return { id: user.id, username: user.username, role: user.role };
   } catch (err) {
     console.error('Create user error:', err);
     throw err;
@@ -218,7 +217,7 @@ function requireAuth(req, res, next) {
 async function listUsers(offset = 0) {
   try {
     const users = await User.findMany({
-      select: { id: true, username: true, role: true, permissions: true, created_at: true },
+      select: { id: true, username: true, role: true, created_at: true },
       take: 100,
       skip: offset,
       orderBy: { created_at: 'desc' }
@@ -256,13 +255,11 @@ async function updateUserPermissions(userId, role, permissions) {
   try {
     const data = {};
     if (role) data.role = role;
-    if (permissions) data.permissions = permissions;
-
     const user = await User.update({
       where: { id: userId },
       data
     });
-    return { id: user.id, username: user.username, role: user.role, permissions: user.permissions };
+    return { id: user.id, username: user.username, role: user.role };
   } catch (err) {
     console.error('Update user permissions error:', err);
     throw err;
@@ -320,7 +317,7 @@ router.post('/login', async (req, res) => {
     setSessionCookie(res, USER_SESSION_COOKIE, token);
     // Do not touch admin cookie here to allow parallel sessions
     const profile = await getUserProfile(user.id);
-    res.json({ role: user.role, permissions: user.permissions, profile: serializeProfile(profile) });
+    res.json({ role: user.role, permissions: [], profile: serializeProfile(profile) });
   } catch (err) {
     console.error('Login failed:', err);
     res.status(500).json({ error: 'Login failed' });
@@ -345,7 +342,7 @@ router.post('/admin/login', async (req, res) => {
     // Ensure bot/login session does not leak admin rights
     clearSessionCookie(res, USER_SESSION_COOKIE);
     const profile = await getUserProfile(user.id);
-    res.json({ role: user.role, permissions: user.permissions, profile: serializeProfile(profile) });
+    res.json({ role: user.role, permissions: [], profile: serializeProfile(profile) });
   } catch (err) {
     console.error('Admin login failed:', err);
     res.status(500).json({ error: 'Admin login failed' });
@@ -384,7 +381,7 @@ router.post('/register', async (req, res) => {
     const token = await createSession(user.id, { scope: 'user' });
     setSessionCookie(res, USER_SESSION_COOKIE, token);
 
-    res.status(201).json({ role: user.role, permissions: user.permissions, profile: serializeProfile(profile) });
+    res.status(201).json({ role: user.role, permissions: [], profile: serializeProfile(profile) });
   } catch (err) {
     console.error('Registration failed:', err);
     res.status(500).json({ error: 'Registration failed' });
@@ -436,7 +433,7 @@ router.get('/admin/validate', async (req, res) => {
   const session = token && await getSession(token);
   if (session && ADMIN_ALLOWED_ROLES.has(session.role)) {
     const profile = await getUserProfile(session.userId);
-    res.json({ valid: true, username: session.username, role: session.role, permissions: session.permissions, profile: serializeProfile(profile) });
+    res.json({ valid: true, username: session.username, role: session.role, permissions: [], profile: serializeProfile(profile) });
   } else {
     res.status(401).json({ valid: false, error: 'Invalid or expired token' });
   }

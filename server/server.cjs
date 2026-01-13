@@ -91,6 +91,16 @@ const dashboardController = require('./controllers/dashboardController.cjs');
 const imageController = require('./controllers/imageController.cjs');
 const { swaggerUi, specs } = require('./swagger.js');
 const app = express();
+
+// DEBUG LOGGER
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.url}`);
+  res.on('finish', () => {
+    console.log(`[RESPONSE] ${req.method} ${req.url} ${res.statusCode}`);
+  });
+  next();
+});
+
 // Trust proxy layers for correct client IP detection (default 2: Cloudflare -> Nginx -> Node.js)
 app.set('trust proxy', process.env.TRUST_PROXY_COUNT || 2);
 const port = process.env.PORT || 3000;
@@ -528,7 +538,13 @@ app.get('/admin', async (req, res) => {
     return res.redirect('/login/?redirect=' + encodeURIComponent(req.originalUrl));
   }
   setHtmlNoCache(res);
-  res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'admin', 'index.html'));
+  console.log('Debug: USE_NEW_ADMIN_UI is', process.env.USE_NEW_ADMIN_UI); // DEBUG
+  console.log('Debug: USE_NEW_ADMIN_UI is', process.env.USE_NEW_ADMIN_UI); // DEBUG
+  if (String(process.env.USE_NEW_ADMIN_UI).toLowerCase() === 'true') {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'new-admin', 'index.html'));
+  } else {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'admin', 'index.html'));
+  }
 });
 
 // --- Insufficient Permissions Route ---
@@ -620,7 +636,13 @@ app.use('/admin', async (req, res, next) => {
   }
   // Redirect to the login route so Express can serve the page (dist/src/login/index.html)
   res.redirect('/login/');
-}, express.static(path.join(__dirname, '..', 'dist', 'src', 'admin'), staticAssetOptions));
+}, (req, res, next) => {
+  if (String(process.env.USE_NEW_ADMIN_UI).toLowerCase() === 'true') {
+    express.static(path.join(__dirname, '..', 'dist', 'src', 'new-admin'), staticAssetOptions)(req, res, next);
+  } else {
+    express.static(path.join(__dirname, '..', 'dist', 'src', 'admin'), staticAssetOptions)(req, res, next);
+  }
+});
 
 // --- Uploads Static ---
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
