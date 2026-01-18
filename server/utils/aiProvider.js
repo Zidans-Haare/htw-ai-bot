@@ -43,6 +43,9 @@ async function* chatCompletionStream(messages, options = {}) {
   yield* module.chatCompletionStream(messages, options);
 }
 
+// Cache for tool support checks to avoid repeated API calls
+const toolSupportCache = new Map();
+
 /**
  * Checks if the current AI provider and model support tool calls
  * @param {object} options - Options object
@@ -57,42 +60,19 @@ async function supportsToolCalls(options = {}) {
   const prefix = options.backend ? 'BACKEND_' : '';
   const model = options.model || process.env[prefix + 'AI_MODEL'];
 
-  // Known models that support tool calls
-  const toolCallSupportedModels = {
-    // OpenAI models
-    'gpt-4': true,
-    'gpt-4-turbo': true,
-    'gpt-4-turbo-preview': true,
-    'gpt-4-0125-preview': true,
-    'gpt-4-1106-preview': true,
-    'gpt-4o': true,
-    'gpt-4o-mini': true,
-    'gpt-3.5-turbo': true,
-    'gpt-3.5-turbo-0125': true,
-    'gpt-3.5-turbo-1106': true,
-    // Custom OpenAI-compatible models that support tool calls
-    'openai-gpt-oss-120b': true,
+  // Create a cache key based on provider and model
+  const cacheKey = `${provider}:${model}`;
 
-    // Google models
-    'gemini-1.5-pro': true,
-    'gemini-1.5-flash': true,
-    'gemini-pro': true,
-
-    // Anthropic models
-    'claude-3-opus': true,
-    'claude-3-sonnet': true,
-    'claude-3-haiku': true,
-    'claude-3-5-sonnet': true,
-
-    // XAI models
-    'grok-beta': true,
-    'grok-vision-beta': true,
-  };
-
-  // Check if the specific model is known to support tool calls
-  if (model && toolCallSupportedModels[model.toLowerCase()]) {
-    return true;
+  // Check cache first
+  if (toolSupportCache.has(cacheKey)) {
+    return toolSupportCache.get(cacheKey);
   }
+
+  // Define a helper to set cache and return result
+  const cacheAndReturn = (result) => {
+    toolSupportCache.set(cacheKey, result);
+    return result;
+  };
 
   // For OpenAI provider, try to query model capabilities via API
   if (provider === 'openai') {
@@ -107,7 +87,7 @@ async function supportsToolCalls(options = {}) {
       // Check if model supports function calling (some OpenAI-compatible APIs may include this info)
       if (modelInfo && modelInfo.capabilities && modelInfo.capabilities.function_calling) {
         console.log(`Model ${model} explicitly supports function calling`);
-        return true;
+        return cacheAndReturn(true);
       }
     } catch (error) {
       console.log(`Failed to query model capabilities for ${model}:`, error.message);
@@ -115,7 +95,8 @@ async function supportsToolCalls(options = {}) {
     }
   }
 
-  // For unknown models, try a simple test call with tools
+  // Fallback: try a simple test call with tools
+  // This works for any provider by attempting to use a tool and seeing if it fails or succeeds
   try {
     const testMessages = [{ role: 'user', content: 'Hello' }];
     const testOptions = {
@@ -131,11 +112,20 @@ async function supportsToolCalls(options = {}) {
       }]
     };
 
+    // If this call succeeds (doesn't throw), we assume tool support is either present or benignly ignored.
+    // However, some providers might ignore tools silently. 
+    // Ideally we'd check if `tool_calls` is in the response, but we can't force the model to use it with 'Hello'.
+    // The main goal is to check if passing 'tools' CAUSES an error (e.g. 400 Bad Request).
     await chatCompletion(testMessages, testOptions);
-    return true;
+    return cacheAndReturn(true);
   } catch (error) {
     console.log(`Tool call support test failed for ${provider}/${model}:`, error.message);
-    return false;
+    // If the error specifically mentions tools/functions being unsupported, return false.
+    // Otherwise, it might be a network error, but we'll assume false to be safe for now 
+    // or maybe true if we want to be optimistic? 
+    // Given the user wants to support "unknown" models, assuming false on error is safer 
+    // to prevent breaking the main chat loop.
+    return cacheAndReturn(false);
   }
 }
 
