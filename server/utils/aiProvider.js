@@ -5,6 +5,7 @@ async function loadProvider(provider) {
     let modulePath;
     switch (provider) {
       case 'openai':
+      case 'chatAi':
         modulePath = './openaiProvider.js';
         break;
       case 'google':

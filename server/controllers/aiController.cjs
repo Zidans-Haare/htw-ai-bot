@@ -616,7 +616,13 @@ async function streamChat(req, res) {
     }
 
     const normalizedImageBaseUrl = imageBaseUrl ? imageBaseUrl.replace(/\/+$/, '') : '/uploads/images';
-    const imagesForPayload = imageEntries.map(entry => {
+    
+    // Filter images: Only include those that are actually referenced in the response text
+    const referencedImageEntries = imageEntries.filter(entry => 
+      fullResponseText.includes(entry.filename)
+    );
+
+    const imagesForPayload = referencedImageEntries.map(entry => {
       let url;
       try {
         url = imageBaseUrl ? new URL(entry.filename, imageBaseUrl).toString() : `/uploads/images/${entry.filename}`;
