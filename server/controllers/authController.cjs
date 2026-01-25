@@ -7,7 +7,7 @@ const { User, AuthSession, UserProfiles } = require('./db.cjs');
 
 const USER_SESSION_COOKIE = 'session_token';
 const ADMIN_SESSION_COOKIE = 'admin_session_token';
-// const ADMIN_COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session_token'; // Unused
+const ADMIN_COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session_token';
 const ADMIN_TOKEN_PREFIX = 'admin:';
 const ADMIN_ALLOWED_ROLES = new Set(['admin', 'manager', 'editor', 'entwickler']);
 
@@ -77,26 +77,30 @@ async function getSession(token) {
     const updatedAt = new Date(session.updated_at);
     const createdAt = new Date(session.created_at);
 
+    // Check inactivity (using updated_at as last activity)
     if (now.getTime() - updatedAt.getTime() > SESSION_INACTIVITY_TIMEOUT_MS) {
       await AuthSession.deleteMany({ where: { token } });
       return null;
     }
 
+    // Check max usage
     if (now.getTime() - createdAt.getTime() > SESSION_MAX_DURATION_MS) {
       await AuthSession.deleteMany({ where: { token } });
       return null;
     }
 
+    // Check expiration
     const expiresAt = new Date(session.expires_at);
     if (now > expiresAt) {
       await AuthSession.deleteMany({ where: { token } });
       return null;
     }
 
+    // Update last activity (updated_at)
     await AuthSession.updateMany({
       where: { token },
       data: {}
-    });
+    }); // updated_at auto-updates
 
     return {
       userId: session.user.id,
@@ -112,7 +116,7 @@ async function getSession(token) {
 async function cleanupExpiredSessions() {
   try {
     const now = new Date();
-    await AuthSession.deleteMany({
+    const result = await AuthSession.deleteMany({
       where: {
         OR: [
           { expires_at: { lt: now } },
@@ -262,6 +266,43 @@ async function updateUserPermissions(userId, role, permissions) {
   }
 }
 
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     summary: Benutzer anmelden
+ *     tags: [Authentifizierung]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Erfolgreiche Anmeldung
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 role:
+ *                   type: string
+ *       400:
+ *         description: Fehlende Anmeldedaten
+ *       401:
+ *         description: Ungültige Anmeldedaten
+ *       500:
+ *         description: Serverfehler
+ */
 router.post('/login', async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
@@ -274,6 +315,7 @@ router.post('/login', async (req, res) => {
     }
     const token = await createSession(user.id, { scope: 'user' });
     setSessionCookie(res, USER_SESSION_COOKIE, token);
+    // Do not touch admin cookie here to allow parallel sessions
     const profile = await getUserProfile(user.id);
     res.json({ role: user.role, permissions: [], profile: serializeProfile(profile) });
   } catch (err) {
@@ -297,6 +339,7 @@ router.post('/admin/login', async (req, res) => {
     }
     const token = await createSession(user.id, { scope: 'admin' });
     setSessionCookie(res, ADMIN_SESSION_COOKIE, token);
+    // Ensure bot/login session does not leak admin rights
     clearSessionCookie(res, USER_SESSION_COOKIE);
     const profile = await getUserProfile(user.id);
     res.json({ role: user.role, permissions: [], profile: serializeProfile(profile) });
@@ -345,6 +388,29 @@ router.post('/register', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/validate:
+ *   get:
+ *     summary: Session validieren
+ *     tags: [Authentifizierung]
+ *     responses:
+ *       200:
+ *         description: Session ist gültig
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ *                 username:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *       401:
+ *         description: Ungültige oder abgelaufene Session
+ */
 router.get('/validate', async (req, res) => {
   const token = req.cookies[USER_SESSION_COOKIE];
   const session = token && await getSession(token);
@@ -408,6 +474,16 @@ router.put('/profile', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/logout:
+ *   post:
+ *     summary: Benutzer abmelden
+ *     tags: [Authentifizierung]
+ *     responses:
+ *       200:
+ *         description: Erfolgreiche Abmeldung
+ */
 router.post('/logout', async (req, res) => {
   const token = req.cookies[USER_SESSION_COOKIE];
   if (token) {

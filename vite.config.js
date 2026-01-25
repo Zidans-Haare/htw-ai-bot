@@ -14,6 +14,8 @@ logger.warnOnce = (msg) => {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const useNewUI = env.USE_NEW_UI === 'true';
+  const useNewAdminUI = env.USE_NEW_ADMIN_UI === 'true';
+  const adminEntry = useNewAdminUI ? resolve(__dirname, 'src/new-admin/index.html') : resolve(__dirname, 'src/admin/index.html');
 
   return {
     // logLevel: 'silent',
@@ -21,10 +23,11 @@ export default defineConfig(({ mode }) => {
 
     plugins: [
       react(),
+      // Custom plugin to handle MPA rewrites for development
       {
         name: 'mpa-rewrites',
         configureServer(server) {
-          server.middlewares.use((req, _res, next) => {
+          server.middlewares.use((req, _res, next) => { // Changed _res to res as per snippet, but keeping _res for consistency with original
             const url = new URL(req.url, 'http://localhost');
             const { pathname } = url;
 
@@ -48,7 +51,11 @@ export default defineConfig(({ mode }) => {
             }
 
             if (pathname === '/admin' || pathname === '/admin/') {
-              req.url = '/src/admin/index.html';
+              if (useNewAdminUI) {
+                req.url = '/src/new-admin/index.html';
+              } else {
+                req.url = '/src/admin/index.html';
+              }
               return next();
             }
 
@@ -101,7 +108,7 @@ export default defineConfig(({ mode }) => {
         input: {
           bot: resolve(__dirname, 'src/bot/index.html'),
           newui: resolve(__dirname, 'src/new-ui/index.html'),
-          admin: resolve(__dirname, 'src/admin/index.html'),
+          admin: adminEntry, // Use the dynamically determined admin entry point
           dash: resolve(__dirname, 'src/dash/index.html'),
           login: resolve(__dirname, 'src/login/index.html'),
         },

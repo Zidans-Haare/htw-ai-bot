@@ -1,8 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+const { prisma } = require('../controllers/db.cjs');
 const fetch = require('node-fetch');
 const { spawn } = require('child_process');
-
-const prisma = new PrismaClient();
 
 // Store active MCP server processes
 const activeProcesses = new Map();

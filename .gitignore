@@ -17,7 +17,7 @@ uploads/
 public/admin/milkdown_editor/
 cache/
 .DS_Store
-package-lock.json
+
 .vectordb_last_sync
 dist/
 server/lib/generated/prisma

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nexus Admin - AI Assistant</title>
+
+  <link rel="icon" href="/assets/images/favicon_32.png">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans:wght@400;500;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind & Config -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1f2937",
+            "primary-dark": "#000000",
+            "accent-gray": "#94a3b8",
+            "background-light": "#f8fafc",
+            "glass-border": "rgba(255, 255, 255, 0.6)",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"],
+            "body": ["Inter", "sans-serif"],
+          },
+          borderRadius: {
+            "DEFAULT": "1rem",
+            "lg": "1.5rem",
+            "xl": "2.1rem",
+            "2xl": "3rem",
+            "full": "9999px"
+          },
+          boxShadow: {
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.03)',
+            'glass-hover': '0 12px 40px 0 rgba(0, 0, 0, 0.08)',
+          }
+        },
+      },
+    }
+  </script>
+
+  <!-- Nexus Styles -->
+  <style>
+    :root {
+      --app-height: 100dvh;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    html,
+    body {
+      height: var(--app-height);
+      width: 100vw;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.04);
+    }
+
+    .dark .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Admin specific overrides to keep functionality working */
+    .hidden {
+      display: none !important;
+    }
+
+    .active {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .dark .active {
+      background-color: #1e293b;
+      color: #fff;
+    }
+  </style>
+
+  <!-- Original Admin Logic -->
+  <script type="module" src="./admin.js"></script>
+</head>
+
+<body
+  class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-display selection:bg-slate-200 dark:selection:bg-slate-800 flex flex-row h-screen">
+
+  <!-- Sidebar Navigation -->
+  <aside id="sidebar"
+    class="bg-white/80 dark:bg-slate-900/80 border-r border-slate-200 dark:border-slate-800 w-[280px] flex flex-col h-full transition-transform duration-300 backdrop-blur-md z-40 hidden md:flex">
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="size-8 rounded-xl bg-slate-900 dark:bg-white flex items-center justify-center shadow-lg">
+          <span
+            class="material-symbols-outlined text-white dark:text-slate-900 text-[18px] font-bold">admin_panel_settings</span>
+        </div>
+        <h1 class="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Nexus Admin</h1>
+      </div>
+
+      <nav id="main-menu" class="space-y-1">
+        <a href="#" id="btn-editor"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">edit_note</span>
+          <span class="text-sm font-medium">Editor</span>
+        </a>
+        <a href="#" id="btn-questions"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all justify-between">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[20px]">help</span>
+            <span class="text-sm font-medium">Fragen</span>
+          </div>
+          <span id="open-count" class="text-xs bg-red-500 text-white rounded-full px-2 py-0.5 font-bold">0</span>
+        </a>
+        <a href="#" id="btn-images"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">image</span>
+          <span class="text-sm font-medium">Bilder</span>
+        </a>
+        <a href="#" id="btn-documents"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">description</span>
+          <span class="text-sm font-medium">Dokumente</span>
+        </a>
+        <a href="#" id="btn-archive"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+          <span class="text-sm font-medium">Archiv</span>
+        </a>
+        <a href="#" id="btn-feedback"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">reviews</span>
+          <span class="text-sm font-medium">Feedback</span>
+        </a>
+        <a href="#" id="btn-conversations"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">forum</span>
+          <span class="text-sm font-medium">Conversations</span>
+        </a>
+        <a href="#" id="btn-stats"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+          <span class="text-sm font-medium">Statistiken</span>
+        </a>
+        <a href="#" id="btn-backup"
+          class="hidden flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">backup</span>
+          <span class="text-sm font-medium">Backup</span>
+        </a>
+        <a href="#" id="btn-mcp"
+          class="hidden flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">dns</span>
+          <span class="text-sm font-medium">MCP Servers</span>
+        </a>
+        <a href="#" id="btn-user"
+          class="hidden flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+          <span class="material-symbols-outlined text-[20px]">group</span>
+          <span class="text-sm font-medium">Benutzer</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="mt-auto p-4 border-t border-slate-100 dark:border-slate-800">
+      <div id="user-session-info" class="text-xs text-center text-slate-400 mb-2"></div>
+      <a href="#" id="btn-logout"
+        class="flex w-full items-center gap-3 rounded-xl p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors justify-center">
+        <span class="material-symbols-outlined">logout</span>
+        <span class="text-sm font-bold">Sign Out</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Mobile Hamburger (Hidden for now, can be implemented similar to main UI) -->
+  <button id="sidebar-toggle"
+    class="absolute top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md md:hidden text-slate-700">
+    <i id="sidebar-toggle-icon" class="fas fa-bars"></i>
+  </button>
+
+  <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-950 relative">
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-y-auto p-4 md:p-8">
+
+      <!-- Editor View -->
+      <div id="editor-view" class="flex flex-col h-full max-w-5xl mx-auto space-y-6">
+        <!-- List Container -->
+        <div id="editor-list-container" class="glass-panel rounded-2xl p-6 flex flex-col h-full animate-fade-in-up">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Artikel</h2>
+            <button id="add-heading"
+              class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2 rounded-lg font-semibold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+              <span class="material-symbols-outlined text-[20px]">add</span> Neuer Artikel
+            </button>
+          </div>
+          <div class="mb-4 relative">
+            <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400">search</span>
+            <input id="search" type="text" placeholder="Suchen..."
+              class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700">
+          </div>
+          <div class="flex-1 overflow-y-auto pr-2">
+            <ul id="article-list" class="space-y-2"></ul>
+          </div>
+        </div>
+
+        <!-- Edit Container -->
+        <div id="editor-edit-container"
+          class="hidden glass-panel rounded-2xl p-6 flex flex-col h-full animate-fade-in-up">
+          <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <button id="editor-back-btn"
+              class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h2 class="text-xl font-bold">Artikel bearbeiten</h2>
+          </div>
+
+          <div id="question-edit-banner"
+            class="hidden mb-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center justify-between">
+            <div>
+              <span class="font-bold text-blue-800">Frage:</span> <span id="question-edit-label"
+                class="text-blue-700"></span>
+              <input type="hidden" id="question-edit-id">
+            </div>
+            <div class="flex gap-2">
+              <button id="cancel-edit-question" class="text-blue-600 font-medium hover:underline">Abbrechen</button>
+              <button id="mark-as-answered-btn"
+                class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                disabled>Beantwortet</button>
+            </div>
+          </div>
+
+          <div class="flex gap-4 mb-4">
+            <input id="article-input"
+              class="flex-1 p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-slate-200"
+              placeholder="Titel des Artikels">
+            <select id="article-access-level"
+              class="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-slate-200">
+              <option value="public">Öffentlich</option>
+              <option value="intern">Intern</option>
+              <option value="employee" selected>Mitarbeiter</option>
+              <option value="manager">Führungskraft</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div id="editor"
+            class="flex-1 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden mb-4 bg-white/50">
+          </div>
+
+          <div class="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800">
+            <span id="last-edited-by" class="text-xs text-slate-400"></span>
+            <div class="flex gap-3">
+              <button id="delete-btn"
+                class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">Löschen</button>
+              <button id="save-btn"
+                class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-6 py-2 rounded-lg font-bold shadow-sm hover:opacity-90 disabled:opacity-50 transition-all"
+                disabled>Speichern</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions View -->
+      <div id="questions-view" class="hidden flex flex-col h-full max-w-5xl mx-auto glass-panel rounded-2xl p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold tracking-tight text-slate-900">Fragen</h2>
+          <div class="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button id="tab-open"
+              class="px-4 py-1.5 rounded-lg text-sm font-medium bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white transition-all">Offen</button>
+            <button id="tab-answered"
+              class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 transition-all">Beantwortet</button>
+          </div>
+        </div>
+        <input id="question-search"
+          class="w-full mb-4 pl-4 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl"
+          placeholder="Fragen durchsuchen...">
+        <div id="open-list" class="flex-1 overflow-y-auto space-y-3"></div>
+        <div id="answered-list" class="flex-1 overflow-y-auto space-y-3 hidden"></div>
+      </div>
+
+      <!-- User View -->
+      <div id="user-view" class="hidden flex flex-col h-full max-w-5xl mx-auto space-y-6">
+        <div id="user-admin" class="glass-panel rounded-2xl p-6">
+          <h2 class="text-xl font-bold mb-4">Neuen Benutzer anlegen</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1">Username</label>
+              <input id="new-user" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                placeholder="Name">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1">Passwort</label>
+              <input id="new-pass" type="password" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                placeholder="********">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1">Rolle</label>
+              <select id="new-role" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <option value="editor">Editor</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+                <option value="entwickler">Entwickler</option>
+                <option value="intern">Praktikant</option>
+              </select>
+            </div>
+            <button id="create-user"
+              class="h-[42px] bg-slate-900 text-white rounded-xl font-bold hover:opacity-90 transition-opacity">Anlegen</button>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col">
+          <h2 class="text-xl font-bold mb-4">Benutzerliste</h2>
+          <div id="user-list" class="flex-1 overflow-y-auto space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Placeholder Views (Images, Docs, etc.) - applying generic glass panel -->
+      <div id="images-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full">
+        <h2 class="text-2xl font-bold mb-6">Bilder</h2>
+        <div id="images-list" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+      </div>
+
+      <div id="documents-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full">
+        <h2 class="text-2xl font-bold mb-6">Dokumente</h2>
+        <div id="pdf-list" class="space-y-2"></div>
+      </div>
+
+      <div id="archive-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold">Archiv</h2>
+          <select id="archive-sort" class="p-2 bg-slate-100 rounded-lg text-sm border-none">
+            <option value="newest">Neueste</option>
+            <option value="oldest">Älteste</option>
+          </select>
+        </div>
+        <input id="archive-search" class="w-full mb-4 p-2 bg-slate-100 rounded-xl border-none"
+          placeholder="Archiv durchsuchen...">
+        <div id="archive-list" class="flex-1 overflow-y-auto space-y-2"></div>
+      </div>
+
+      <div id="feedback-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full">
+        <h2 class="text-2xl font-bold mb-6">Feedback</h2>
+        <div id="feedback-list" class="space-y-4"></div>
+      </div>
+
+      <div id="conversations-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full">
+        <h2 class="text-2xl font-bold mb-6">Conversations</h2>
+        <div id="conversations-list" class="space-y-2"></div>
+      </div>
+
+      <div id="stats-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full overflow-y-auto">
+        <div id="stats-content"></div>
+      </div>
+
+      <div id="backup-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full">
+        <h2 class="text-2xl font-bold mb-6">Backup Management</h2>
+        <!-- Backup UI elements here -->
+        <div class="flex space-x-4 mb-4">
+          <button id="create-backup-btn" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Create New Backup</button>
+          <input type="file" id="upload-backup-input" accept=".zip" class="hidden">
+          <button id="upload-backup-btn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg">Upload Backup
+            File</button>
+        </div>
+        <div id="backup-list" class="space-y-2"></div>
+      </div>
+
+      <div id="mcp-view" class="hidden glass-panel rounded-2xl p-6 max-w-5xl mx-auto h-full">
+        <h2 class="text-2xl font-bold mb-6">MCP Servers</h2>
+        <!-- MCP UI elements here -->
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modals (Copied and styled from Admin) -->
+
+  <!-- Edit User Modal -->
+  <div id="edit-user-modal"
+    class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
+      <h3 class="text-xl font-bold mb-4">Benutzer bearbeiten</h3>
+      <p class="mb-4 text-sm text-slate-500">Bearbeite Benutzer: <strong id="edit-user-username"
+          class="text-slate-900"></strong></p>
+      <input type="hidden" id="edit-user-id">
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 mb-1">Rolle</label>
+        <select id="edit-user-role" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
+          <option value="editor">Editor</option>
+          <option value="entwickler">Entwickler</option>
+          <option value="intern">Praktikant</option>
+        </select>
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-slate-500 mb-1">Berechtigungen</label>
+        <div id="edit-user-permissions-list"
+          class="space-y-2 max-h-40 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50/50">
+          <label class="flex items-center space-x-2 text-sm p-1 hover:bg-white rounded cursor-pointer">
+            <input type="checkbox" value="can_delete_users" class="rounded text-slate-900 focus:ring-slate-900">
+            <span>User Löschen</span>
+          </label>
+          <label class="flex items-center space-x-2 text-sm p-1 hover:bg-white rounded cursor-pointer">
+            <input type="checkbox" value="can_view_stats" class="rounded text-slate-900 focus:ring-slate-900">
+            <span>Statistiken sehen</span>
+          </label>
+          <label class="flex items-center space-x-2 text-sm p-1 hover:bg-white rounded cursor-pointer">
+            <input type="checkbox" value="can_manage_backups" class="rounded text-slate-900 focus:ring-slate-900">
+            <span>Backups verwalten</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button id="edit-user-cancel"
+          class="px-4 py-2 text-slate-500 font-medium hover:bg-slate-100 rounded-lg">Abbrechen</button>
+        <button id="edit-user-save"
+          class="px-4 py-2 bg-slate-900 text-white rounded-lg font-bold hover:shadow-lg transition-all">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete User Modal -->
+  <div id="remove-user-modal"
+    class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div class="flex items-center gap-3 mb-4 text-red-600">
+        <span class="material-symbols-outlined">warning</span>
+        <h3 class="text-lg font-bold">Benutzer löschen</h3>
+      </div>
+      <p class="mb-4 text-sm text-slate-600">
+        Möchtest du <strong id="remove-user-username"></strong> wirklich löschen? Diese Aktion ist endgültig.
+      </p>
+      <input id="remove-user-confirm-input" type="text"
+        class="w-full p-2.5 mb-4 border border-red-200 rounded-xl focus:ring-red-500 placeholder:text-red-200"
+        placeholder="Benutzernamen bestätigen...">
+
+      <div class="flex justify-end gap-2">
+        <button id="remove-user-cancel"
+          class="px-4 py-2 text-slate-500 font-medium hover:bg-slate-100 rounded-lg">Abbrechen</button>
+        <button id="remove-user-confirm"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50 transition-all"
+          disabled>Löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="change-password-modal"
+    class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <h3 class="text-lg font-bold mb-4">Passwort ändern</h3>
+      <p class="mb-4 text-sm text-slate-500">Neues Passwort für <strong id="change-password-username"></strong>:</p>
+      <input id="new-password-input" type="password"
+        class="w-full p-2.5 mb-6 bg-slate-50 border border-slate-200 rounded-xl" placeholder="Neues Passwort">
+      <div class="flex justify-end gap-2">
+        <button id="change-password-cancel"
+          class="px-4 py-2 text-slate-500 font-medium hover:bg-slate-100 rounded-lg">Abbrechen</button>
+        <button id="change-password-confirm"
+          class="px-4 py-2 bg-slate-900 text-white rounded-lg font-bold hover:shadow-lg transition-all">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Response Modal -->
+  <div id="ai-response-modal"
+    class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl p-6 flex flex-col max-h-[80vh]">
+      <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-600">smart_toy</span> AI Test-Response
+      </h3>
+      <div class="flex-1 overflow-y-auto space-y-4 pr-2">
+        <div class="bg-slate-50 p-4 rounded-xl">
+          <h4 class="text-xs font-bold uppercase text-slate-400 mb-1">Prompt</h4>
+          <p id="ai-prompt" class="text-slate-800 font-medium"></p>
+        </div>
+        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+          <h4 class="text-xs font-bold uppercase text-blue-400 mb-1">AI Antwort</h4>
+          <div id="ai-response" class="prose prose-sm max-w-none"></div>
+        </div>
+      </div>
+      <div class="flex justify-end mt-6 pt-4 border-t border-slate-100">
+        <button id="ai-response-close"
+          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
