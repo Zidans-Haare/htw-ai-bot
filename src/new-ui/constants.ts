@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   linkPreviews: false,
   highContrast: false,
   reduceMotion: false,
-  textToSpeech: true,
+  textToSpeech: false,
   speechRate: 1.0,
   temperature: 0.7,
   maxTokens: 2048,

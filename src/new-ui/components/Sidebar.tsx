@@ -27,7 +27,6 @@ const Sidebar: React.FC<Props> = ({ chats, currentChatId, onSelectChat, onNewCha
         <div className="flex items-center gap-3 mb-8">
           <img src="/assets/images/HTW.svg" alt="HTW Dresden" className="h-8 dark:hidden" />
           <img src="/assets/images/HTW_hell.png" alt="HTW Dresden" className="h-8 hidden dark:block" />
-          <h1 className="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Assistent</h1>
         </div>
         
         <button 
