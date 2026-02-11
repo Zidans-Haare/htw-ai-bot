@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthState, User, ChatSession, AppSettings, Message } from './types';
-import { DEFAULT_SETTINGS, MOCK_USER } from './constants';
+import { DEFAULT_SETTINGS, GUEST_USER } from './constants';
 import LandingPage from './components/LandingPage';
 import AuthScreens from './components/AuthScreens';
 import Sidebar from './components/Sidebar';
@@ -38,12 +38,14 @@ const App: React.FC = () => {
             setSettings(prev => ({ ...prev, ...sessionUser.profile!.uiSettings }));
           }
         } else {
-          // If not logged in, we stay on landing or go to landing
-          setAuthState('landing');
+          // No session — continue as guest without requiring login
+          setUser(GUEST_USER);
+          setAuthState('authenticated');
         }
       } catch (e) {
         console.error("Session check failed", e);
-        setAuthState('landing');
+        setUser(GUEST_USER);
+        setAuthState('authenticated');
       }
     };
     initApp();

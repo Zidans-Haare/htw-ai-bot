@@ -28,6 +28,13 @@ export const MOCK_USER: User = {
   avatar: 'https://picsum.photos/seed/alex/100/100'
 };
 
+export const GUEST_USER: User = {
+  id: 'guest',
+  name: 'Gast',
+  email: '',
+  accessLevel: 'Student',
+};
+
 export const INITIAL_PROMPTS = [
   { id: 'p1', title: 'Data Analysis', desc: 'Synthesize internal reports', icon: 'analytics' },
   { id: 'p2', title: 'Project Plan', desc: 'Draft Q3 roadmap', icon: 'assignment' },
