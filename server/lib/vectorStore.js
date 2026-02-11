@@ -88,7 +88,7 @@ class HuggingFaceEmbeddings {
   }
 }
 const { Document } = require("@langchain/core/documents");
-const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
+const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const { v4: uuidv4 } = require('uuid');
 const winston = require('winston');
 const sanitizeHtml = require('sanitize-html');
