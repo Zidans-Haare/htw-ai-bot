@@ -28,11 +28,18 @@ export const MOCK_USER: User = {
   avatar: 'https://picsum.photos/seed/alex/100/100'
 };
 
+export const AVATAR_OPTIONS = [
+  { id: 'faranto', name: 'Team Faranto', src: '/assets/images/smoky_klein.png' },
+  { id: 'stura', name: 'Team StuRa', src: '/assets/images/stu_klein.png' },
+  { id: 'both', name: 'Team Beide', src: '/assets/images/FarantoStura.png' },
+];
+
 export const GUEST_USER: User = {
   id: 'guest',
   name: 'Gast',
   email: '',
   accessLevel: 'Student',
+  avatar: '/assets/images/smoky_klein.png',
 };
 
 export const INITIAL_PROMPTS = [

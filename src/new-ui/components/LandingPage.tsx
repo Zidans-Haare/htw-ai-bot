@@ -15,13 +15,13 @@ const LandingPage: React.FC<Props> = ({ onGetStarted }) => {
       <div className="relative z-10 flex w-full max-w-[520px] flex-col overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur-2xl ring-1 ring-black/5 animate-fade-in-up">
         <div className="flex flex-col items-center p-10 md:p-14 text-center">
           <div className="relative mb-10">
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-slate-900 shadow-2xl">
-              <span className="material-symbols-outlined text-[48px] text-white">smart_toy</span>
+            <div className="relative flex h-24 w-auto items-center justify-center rounded-[2rem] bg-white p-4 shadow-2xl">
+              <img src="/assets/images/HTW.svg" alt="HTW Dresden" className="h-16" />
             </div>
           </div>
           
           <div className="space-y-4 mb-10">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Nexus AI</h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">HTW Assistent</h1>
             <p className="text-slate-500 text-lg leading-relaxed max-w-sm mx-auto">
               Intelligence refined. Experience the future of collaborative conversation.
             </p>
@@ -29,7 +29,7 @@ const LandingPage: React.FC<Props> = ({ onGetStarted }) => {
 
           <div className="flex flex-wrap justify-center gap-3 mb-12 opacity-80">
             <span className="px-3 py-1.5 rounded-full bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200">
-              Nexus One v2
+              HTW Assistent v2
             </span>
             <span className="px-3 py-1.5 rounded-full bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200">
               Thinking v1.2

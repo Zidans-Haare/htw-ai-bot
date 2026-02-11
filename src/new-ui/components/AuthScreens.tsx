@@ -23,7 +23,7 @@ const AuthScreens: React.FC<Props> = ({ state, setState, onLogin }) => {
             <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-slate-900 text-white mb-2 shadow-lg">
               <span className="material-symbols-outlined text-[32px]">smart_toy</span>
             </div>
-            <h1 className="text-slate-900 text-3xl font-bold tracking-tight">Nexus Assistant</h1>
+            <h1 className="text-slate-900 text-3xl font-bold tracking-tight">HTW Assistent</h1>
             <p className="text-slate-500 text-sm font-medium">Internal Corporate Access • Secure Login</p>
           </div>
 
@@ -93,7 +93,7 @@ const AuthScreens: React.FC<Props> = ({ state, setState, onLogin }) => {
             <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-slate-900 text-white mb-2 shadow-lg">
               <span className="material-symbols-outlined text-[32px]">person_add</span>
             </div>
-            <h1 className="text-slate-900 text-3xl font-bold tracking-tight">Join Nexus</h1>
+            <h1 className="text-slate-900 text-3xl font-bold tracking-tight">HTW Assistent beitreten</h1>
             <p className="text-slate-500 text-sm font-medium">Create your secure workspace account.</p>
           </div>
 

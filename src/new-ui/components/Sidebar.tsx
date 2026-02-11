@@ -25,10 +25,9 @@ const Sidebar: React.FC<Props> = ({ chats, currentChatId, onSelectChat, onNewCha
     `}>
       <div className="p-6">
         <div className="flex items-center gap-3 mb-8">
-          <div className="size-8 rounded-xl bg-slate-900 dark:bg-white flex items-center justify-center shadow-lg">
-            <span className="material-symbols-outlined text-white dark:text-slate-900 text-[18px] font-bold">smart_toy</span>
-          </div>
-          <h1 className="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Nexus Assistant</h1>
+          <img src="/assets/images/HTW.svg" alt="HTW Dresden" className="h-8 dark:hidden" />
+          <img src="/assets/images/HTW_hell.png" alt="HTW Dresden" className="h-8 hidden dark:block" />
+          <h1 className="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Assistent</h1>
         </div>
         
         <button 

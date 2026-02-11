@@ -263,11 +263,12 @@ const App: React.FC = () => {
   if (authState === 'loading') return (
     <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950">
       <div className="flex flex-col items-center gap-6 animate-pulse-soft">
-        <div className="size-20 rounded-3xl bg-slate-900 dark:bg-white flex items-center justify-center shadow-2xl">
-          <span className="material-symbols-outlined text-[48px] text-white dark:text-slate-900">smart_toy</span>
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-800 shadow-2xl">
+          <img src="/assets/images/HTW.svg" alt="HTW Dresden" className="h-16 dark:hidden" />
+          <img src="/assets/images/HTW_hell.png" alt="HTW Dresden" className="h-16 hidden dark:block" />
         </div>
         <div className="flex flex-col items-center gap-1">
-          <h1 className="text-xl font-bold dark:text-white tracking-widest uppercase">Nexus</h1>
+          <h1 className="text-xl font-bold dark:text-white tracking-widest uppercase">HTW Assistent</h1>
           <div className="flex gap-1">
             <div className="size-1 rounded-full bg-slate-400 animate-bounce"></div>
             <div className="size-1 rounded-full bg-slate-400 animate-bounce delay-75"></div>

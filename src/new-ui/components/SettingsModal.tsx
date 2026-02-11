@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { AppSettings, User } from '../types';
-import { DEFAULT_SETTINGS, MOCK_USER } from '../constants';
+import { DEFAULT_SETTINGS, MOCK_USER, AVATAR_OPTIONS } from '../constants';
 
 interface Props {
   settings: AppSettings;
@@ -83,7 +83,7 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
           <div className="mb-6 md:mb-10 pl-2">
             <h1 className="text-xl font-bold flex items-center gap-2 dark:text-white">
               <span className="material-symbols-outlined text-slate-900 dark:text-white">smart_toy</span>
-              Nexus
+              HTW Assistent
             </h1>
             <p className="text-[9px] text-slate-500 mt-1 pl-8 font-bold uppercase tracking-[0.2em]">Internal Config v2.4</p>
           </div>
@@ -113,57 +113,29 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
             <div className="max-w-3xl space-y-10 pb-10">
               {activeTab === 'Profile' && (
                 <div className="space-y-12 animate-fade-in-up">
-                  <section className="flex flex-col md:flex-row items-start md:items-center gap-8">
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="group size-28 rounded-[2.5rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative border-4 border-white dark:border-slate-800 shadow-xl shrink-0 overflow-hidden cursor-pointer"
-                    >
-                      <img src={localUser.avatar} alt="Profile" className="absolute inset-0 size-full object-cover transition-transform group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold uppercase gap-1">
-                        <span className="material-symbols-outlined text-lg">photo_camera</span>
-                        Change
-                      </div>
+                  <section className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Anzeigename</label>
                       <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        accept="image/*"
+                        className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 px-5 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none transition-all"
+                        value={localUser.name}
+                        onChange={(e) => setLocalUser(prev => ({ ...prev, name: e.target.value }))}
                       />
-                    </div>
-                    <div className="flex-1 w-full space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Display Name</label>
-                        <input
-                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 px-5 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900 outline-none transition-all"
-                          value={localUser.name}
-                          onChange={(e) => setLocalUser(prev => ({ ...prev, name: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Work Email</label>
-                        <input
-                          disabled
-                          className="w-full rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 px-5 py-3 text-sm font-bold text-slate-400 cursor-not-allowed"
-                          value={localUser.email}
-                        />
-                      </div>
                     </div>
                   </section>
 
                   <section className="space-y-6">
-                    <h3 className="text-lg font-bold flex items-center gap-3 dark:text-white"><span className="material-symbols-outlined text-slate-400">group</span> Team Workspace</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {['Product Design', 'Software Engineering', 'Academic Research', 'Creative Writing'].map(p => (
-                        <label key={p} className="flex items-center justify-between p-5 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer shadow-sm">
-                          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{p}</span>
-                          <input
-                            type="checkbox"
-                            className="rounded-full size-5 text-slate-900 focus:ring-0"
-                            checked={localSettings.workspacePrefs.includes(p)}
-                            onChange={() => toggleWorkspacePref(p)}
-                          />
-                        </label>
+                    <h3 className="text-lg font-bold flex items-center gap-3 dark:text-white"><span className="material-symbols-outlined text-slate-400">pets</span> Wähle dein Team</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {AVATAR_OPTIONS.map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setLocalUser(prev => ({ ...prev, avatar: opt.src }))}
+                          className={`flex flex-col items-center gap-3 p-6 rounded-3xl border-2 transition-all ${localUser.avatar === opt.src ? 'border-slate-900 dark:border-white bg-white dark:bg-slate-800 shadow-xl' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600'}`}
+                        >
+                          <img src={opt.src} alt={opt.name} className="size-20 rounded-full object-cover shadow-lg" />
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{opt.name}</span>
+                        </button>
                       ))}
                     </div>
                   </section>
@@ -229,7 +201,7 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
                   {[
                     { id: 'highContrast', label: 'High Contrast Mode', desc: 'Force high luminosity contrast for interface elements.' },
                     { id: 'reduceMotion', label: 'Reduced Motion', desc: 'Minimize UI transitions for sensory comfort.' },
-                    { id: 'textToSpeech', label: 'Audio Response', desc: 'Enable speech synthesis for Nexus outputs.' },
+                    { id: 'textToSpeech', label: 'Audio Response', desc: 'Sprachausgabe für Assistent-Antworten aktivieren.' },
                   ].map(item => (
                     <div key={item.id} className="flex items-center justify-between p-6 rounded-[2rem] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
                       <div className="flex flex-col gap-1 pr-4">
@@ -278,7 +250,7 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                             </span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Connected to Nexus Cloud</span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Verbunden mit HTW Cloud</span>
                           </div>
                         </div>
                       </div>

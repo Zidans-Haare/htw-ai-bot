@@ -49,7 +49,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
   const [displayedText, setDisplayedText] = useState('');
   const [wordIndex, setWordIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const words = ["Collaborator", "Marketing Expert", "Software Engineer", "Creative Designer", "Strategist", "Researcher"];
+  const words = ["Studienberatung", "International Office", "Prüfungsamt", "Studentensekretariat", "Mensa", "Bibliothek", "Career Service"];
   const typingSpeed = 150;
   const deletingSpeed = 75;
   const pauseTime = 2000;
@@ -137,7 +137,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[120px] sm:max-w-[300px] md:max-w-[400px]">
-                {chat?.title || 'Nexus Assistant'}
+                {chat?.title || 'HTW Assistent'}
               </h2>
               <div className="relative flex h-2 w-2 shrink-0 mb-0.5">
                 <span className="animate-radar absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -190,7 +190,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
           {!chat || chat.messages.length === 0 ? (
             <div className="py-10 md:py-20 flex flex-col items-center text-center">
               <h1 className="text-2xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 md:mb-6">
-                Nexus <span className="text-slate-400 min-w-[140px] md:min-w-[200px] inline-block">{displayedText}<span className="animate-pulse">|</span></span>
+                ASKI <span className="text-slate-400 min-w-[140px] md:min-w-[200px] inline-block">{displayedText}<span className="animate-pulse">|</span></span>
               </h1>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full mt-6 md:mt-10">
@@ -254,7 +254,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={settings.thinkingMode ? "Deep analysis..." : "Message Nexus..."}
+            placeholder={settings.thinkingMode ? "Tiefe Analyse..." : "Nachricht..."}
             rows={1}
             className="flex-1 bg-transparent border-none focus:ring-0 text-[13px] md:text-sm py-2.5 md:py-3 resize-none max-h-32 md:max-h-40 text-slate-800 dark:text-white"
           />
@@ -303,7 +303,7 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             </button>
           </div>
         </div>
-        <p className="text-center text-[8px] md:text-[10px] text-slate-400 mt-2 md:mt-4 tracking-tight uppercase font-bold opacity-60">Nexus Enterprise • Corporate AI System</p>
+        <p className="text-center text-[8px] md:text-[10px] text-slate-400 mt-2 md:mt-4 tracking-tight uppercase font-bold opacity-60">HTW Dresden • KI Assistent</p>
       </div>
     </div>
   );
