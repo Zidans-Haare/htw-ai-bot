@@ -506,16 +506,21 @@ async function streamChat(req, res) {
       content: m.text,
     }));
 
+    // Use parts format only when images are present, otherwise use standard content format
+    const userMessage = processedImages.length > 0
+      ? {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            ...processedImages.map(img => ({ inlineData: img.inlineData }))
+          ]
+        }
+      : { role: 'user', content: prompt };
+
     const messagesPayload = [
       { role: 'system', content: systemPrompt },
       ...openAIHistory,
-      {
-        role: 'user',
-        parts: [
-          { text: prompt },
-          ...processedImages.map(img => ({ inlineData: img.inlineData }))
-        ]
-      },
+      userMessage,
     ];
 
     // Get MCP tools
