@@ -92,6 +92,7 @@ const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const { v4: uuidv4 } = require('uuid');
 const winston = require('winston');
 const sanitizeHtml = require('sanitize-html');
+const { estimateTokens } = require('../utils/tokenizer');
 const promClient = require('prom-client');
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -135,6 +136,248 @@ const logger = winston.createLogger({
   ]
 });
 
+// German stop words for BM25 tokenization
+const STOP_WORDS = new Set([
+  'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer', 'eines', 'einem', 'einen',
+  'und', 'oder', 'aber', 'wenn', 'als', 'wie', 'dass', 'weil', 'denn', 'so', 'also',
+  'ist', 'sind', 'war', 'hat', 'haben', 'wird', 'werden', 'kann', 'können', 'muss', 'müssen',
+  'ich', 'du', 'er', 'sie', 'es', 'wir', 'ihr', 'mich', 'mir', 'dich', 'dir',
+  'in', 'an', 'auf', 'für', 'mit', 'von', 'zu', 'bei', 'nach', 'aus', 'um', 'über', 'vor',
+  'nicht', 'auch', 'nur', 'noch', 'schon', 'sehr', 'mehr', 'hier', 'da', 'dort',
+  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+  'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'and', 'or', 'but', 'not',
+  'this', 'that', 'it', 'its', 'i', 'you', 'he', 'she', 'we', 'they',
+]);
+
+/**
+ * Lightweight BM25 index for keyword-based retrieval.
+ * Complements vector similarity search for exact matches (names, abbreviations, IDs).
+ */
+class BM25Index {
+  constructor() {
+    this.documents = [];     // { id, pageContent, metadata }
+    this.df = new Map();     // document frequency per term
+    this.docTermFreqs = [];  // per-doc term frequency maps
+    this.avgDl = 0;          // average document length
+    this.k1 = 1.5;
+    this.b = 0.75;
+  }
+
+  /**
+   * Tokenize text: lowercase, split on non-alphanumeric, remove stop words.
+   */
+  _tokenize(text) {
+    return text
+      .toLowerCase()
+      .split(/[^a-zäöüß0-9]+/)
+      .filter(t => t.length > 1 && !STOP_WORDS.has(t));
+  }
+
+  /**
+   * Add a document to the index.
+   */
+  addDocument(doc) {
+    const idx = this.documents.length;
+    this.documents.push(doc);
+
+    const tokens = this._tokenize(doc.pageContent);
+    const tf = new Map();
+    for (const token of tokens) {
+      tf.set(token, (tf.get(token) || 0) + 1);
+    }
+    this.docTermFreqs.push({ tf, length: tokens.length });
+
+    // Update document frequencies
+    for (const term of tf.keys()) {
+      this.df.set(term, (this.df.get(term) || 0) + 1);
+    }
+
+    // Recalculate average document length
+    this.avgDl = this.docTermFreqs.reduce((sum, d) => sum + d.length, 0) / this.documents.length;
+  }
+
+  /**
+   * Clear the index (for re-init).
+   */
+  clear() {
+    this.documents = [];
+    this.df = new Map();
+    this.docTermFreqs = [];
+    this.avgDl = 0;
+  }
+
+  /**
+   * Search the index. Returns top-k results sorted by BM25 score.
+   * @param {string} query
+   * @param {number} k
+   * @param {object} [filter] - Access level filter: { access_level: { $in: [...] } }
+   * @returns {{ pageContent: string, metadata: object, score: number }[]}
+   */
+  search(query, k = 10, filter = undefined) {
+    const queryTokens = this._tokenize(query);
+    if (queryTokens.length === 0) return [];
+
+    const N = this.documents.length;
+    const scores = [];
+
+    for (let i = 0; i < N; i++) {
+      // Apply access level filter
+      if (filter?.access_level?.$in) {
+        const docLevel = this.documents[i].metadata?.access_level;
+        if (docLevel && !filter.access_level.$in.includes(docLevel)) {
+          continue;
+        }
+      }
+
+      const { tf, length: dl } = this.docTermFreqs[i];
+      let score = 0;
+
+      for (const term of queryTokens) {
+        const termFreq = tf.get(term) || 0;
+        if (termFreq === 0) continue;
+
+        const docFreq = this.df.get(term) || 0;
+        // IDF with smoothing
+        const idf = Math.log((N - docFreq + 0.5) / (docFreq + 0.5) + 1);
+        // BM25 term score
+        const tfNorm = (termFreq * (this.k1 + 1)) / (termFreq + this.k1 * (1 - this.b + this.b * (dl / this.avgDl)));
+        score += idf * tfNorm;
+      }
+
+      if (score > 0) {
+        scores.push({ index: i, score });
+      }
+    }
+
+    return scores
+      .sort((a, b) => b.score - a.score)
+      .slice(0, k)
+      .map(s => ({
+        pageContent: this.documents[s.index].pageContent,
+        metadata: this.documents[s.index].metadata,
+        score: s.score,
+      }));
+  }
+}
+
+class SemanticSplitter {
+  constructor(maxChunkSize = 500, overlap = 50) {
+    this.maxChunkSize = maxChunkSize;
+    this.overlap = overlap;
+    this.fallbackSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize: maxChunkSize,
+      chunkOverlap: overlap
+    });
+  }
+
+  /**
+   * Split text by structural boundaries (headings, paragraphs, HRs),
+   * then only use RecursiveCharacterTextSplitter for oversized sections.
+   * @param {string} text - Raw text (may contain HTML/Markdown)
+   * @param {string} [contextPrefix] - Prefix to prepend to each chunk (e.g. article title)
+   * @returns {Promise<string[]>} Array of chunk strings
+   */
+  async splitText(text, contextPrefix = '') {
+    const sections = this._splitBySections(text);
+    const chunks = [];
+
+    for (const section of sections) {
+      const prefixed = contextPrefix
+        ? `[${contextPrefix}] ${section.title ? section.title + ': ' : ''}${section.content}`
+        : (section.title ? `${section.title}: ${section.content}` : section.content);
+
+      const tokenCount = estimateTokens(prefixed);
+
+      if (tokenCount <= this.maxChunkSize) {
+        if (prefixed.trim()) {
+          chunks.push(prefixed.trim());
+        }
+      } else {
+        // Section too large — split with fallback, but keep prefix on each sub-chunk
+        const subChunks = await this.fallbackSplitter.splitText(section.content);
+        for (const sc of subChunks) {
+          const sub = contextPrefix
+            ? `[${contextPrefix}] ${section.title ? section.title + ': ' : ''}${sc}`
+            : (section.title ? `${section.title}: ${sc}` : sc);
+          if (sub.trim()) {
+            chunks.push(sub.trim());
+          }
+        }
+      }
+    }
+
+    return chunks.length > 0 ? chunks : [text.trim()].filter(Boolean);
+  }
+
+  /**
+   * Split text into sections based on structural boundaries:
+   * - HTML headings (<h1>-<h6>)
+   * - Markdown headings (# - ######)
+   * - Horizontal rules (<hr>, ---, ***)
+   * - Double newlines (paragraph breaks)
+   * @returns {{ title: string, content: string }[]}
+   */
+  _splitBySections(text) {
+    // Normalize line endings
+    const normalized = text.replace(/\r\n/g, '\n');
+
+    // Split on heading patterns and horizontal rules
+    const sectionRegex = /(?=<h[1-6][^>]*>)|(?=^#{1,6}\s)/gm;
+    const rawSections = normalized.split(sectionRegex).filter(s => s.trim());
+
+    if (rawSections.length <= 1) {
+      // No headings found — split on double newlines (paragraph breaks)
+      return this._splitByParagraphs(normalized);
+    }
+
+    return rawSections.map(section => {
+      // Extract title from heading if present
+      const htmlHeadingMatch = section.match(/^<h[1-6][^>]*>(.*?)<\/h[1-6]>/i);
+      const mdHeadingMatch = section.match(/^(#{1,6})\s+(.+)/m);
+
+      let title = '';
+      let content = section;
+
+      if (htmlHeadingMatch) {
+        title = sanitizeHtml(htmlHeadingMatch[1], { allowedTags: [] }).trim();
+        content = section.replace(htmlHeadingMatch[0], '').trim();
+      } else if (mdHeadingMatch) {
+        title = mdHeadingMatch[2].trim();
+        content = section.replace(mdHeadingMatch[0], '').trim();
+      }
+
+      return { title, content: content || title };
+    }).filter(s => s.content.trim());
+  }
+
+  /**
+   * Fallback: split on double newlines, grouping small paragraphs together.
+   */
+  _splitByParagraphs(text) {
+    const paragraphs = text.split(/\n{2,}/).filter(p => p.trim());
+    const sections = [];
+    let current = '';
+
+    for (const p of paragraphs) {
+      const combined = current ? `${current}\n\n${p}` : p;
+      if (estimateTokens(combined) <= this.maxChunkSize) {
+        current = combined;
+      } else {
+        if (current.trim()) {
+          sections.push({ title: '', content: current.trim() });
+        }
+        current = p;
+      }
+    }
+    if (current.trim()) {
+      sections.push({ title: '', content: current.trim() });
+    }
+
+    return sections;
+  }
+}
+
 class VectorStoreManager {
   constructor() {
     const modelName = process.env.EMBEDDING_MODEL || 'all-MiniLM-L6-v2';
@@ -145,14 +388,23 @@ class VectorStoreManager {
     } catch (e) { }
     this.store = null;
     this.graphData = null;
+    const chunkSize = parseInt(process.env.CHUNK_SIZE) || 500;
+    const chunkOverlap = parseInt(process.env.CHUNK_OVERLAP) || 50;
+    const pdfChunkSize = parseInt(process.env.PDF_CHUNK_SIZE) || 300;
     this.splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: parseInt(process.env.CHUNK_SIZE) || 500,
-      chunkOverlap: parseInt(process.env.CHUNK_OVERLAP) || 50
+      chunkSize,
+      chunkOverlap
     });
     this.pdfSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: parseInt(process.env.PDF_CHUNK_SIZE) || 300,
-      chunkOverlap: parseInt(process.env.CHUNK_OVERLAP) || 50
+      chunkSize: pdfChunkSize,
+      chunkOverlap
     });
+    this.semanticSplitter = new SemanticSplitter(chunkSize, chunkOverlap);
+    this.pdfSemanticSplitter = new SemanticSplitter(pdfChunkSize, chunkOverlap);
+    this.useSemanticChunking = (process.env.CHUNKING_STRATEGY || 'semantic') === 'semantic';
+    this.bm25Index = new BM25Index();
+    this.useHybridSearch = process.env.HYBRID_SEARCH_ENABLED !== 'false';
+    this.hybridRrfK = parseInt(process.env.HYBRID_RRF_K) || 60;
     this.connect();
   }
 
@@ -243,8 +495,9 @@ class VectorStoreManager {
     const startTime = Date.now();
     try {
       console.log('Initializing vector DB...');
-      // Drop existing vectors for a clean init
+      // Drop existing vectors and BM25 index for a clean init
       await this.dropVectorDB();
+      this.bm25Index.clear();
       // Force full sync for init
       const oldLastSync = this.lastSync;
       this.lastSync = new Date(0);
@@ -319,9 +572,10 @@ class VectorStoreManager {
         // Delete old vectors
         await this.store.delete({ filter: { $and: [{ source: 'headline' }, { id: h.id }] } });
         // Add new
-        let pageContent = `${h.article}\n${h.description}`;
-        pageContent = sanitizeHtml(pageContent);
-        const chunks = await this.splitter.splitText(pageContent);
+        let pageContent = sanitizeHtml(`${h.article}\n${h.description}`);
+        const chunks = this.useSemanticChunking
+          ? await this.semanticSplitter.splitText(pageContent, h.article)
+          : await this.splitter.splitText(pageContent);
         for (let i = 0; i < chunks.length; i++) {
           docs.push(new Document({
             pageContent: chunks[i],
@@ -362,7 +616,10 @@ class VectorStoreManager {
           }
           pageContent = sanitizeHtml(pageContent);
           if (pageContent.trim() === '') continue; // Skip empty
-          const chunks = await this.pdfSplitter.splitText(pageContent);
+          const contextPrefix = doc.hochschuhl_abc?.article || `Seite ${d.metadata?.page || '?'}`;
+          const chunks = this.useSemanticChunking
+            ? await this.pdfSemanticSplitter.splitText(pageContent, contextPrefix)
+            : await this.pdfSplitter.splitText(pageContent);
           for (let i = 0; i < chunks.length; i++) {
             docs.push(new Document({
               pageContent: chunks[i],
@@ -405,7 +662,10 @@ class VectorStoreManager {
               pageContent = `${doc.hochschuhl_abc.article}\n${doc.hochschuhl_abc.description || ''}\n${pageContent}`;
             }
             pageContent = sanitizeHtml(pageContent);
-            const chunks = await this.pdfSplitter.splitText(pageContent);
+            const contextPrefix = doc.hochschuhl_abc?.article || doc.filepath;
+            const chunks = this.useSemanticChunking
+              ? await this.semanticSplitter.splitText(pageContent, contextPrefix)
+              : await this.pdfSplitter.splitText(pageContent);
             for (let i = 0; i < chunks.length; i++) {
               docs.push(new Document({
                 pageContent: chunks[i],
@@ -445,6 +705,17 @@ class VectorStoreManager {
     const batchSize = parseInt(process.env.SYNC_BATCH) || 100;
     for (let i = 0; i < docs.length; i += batchSize) {
       await this.store.addDocuments(docs.slice(i, i + batchSize));
+    }
+
+    // Populate BM25 index for hybrid search
+    if (this.useHybridSearch) {
+      for (const doc of docs) {
+        this.bm25Index.addDocument({
+          pageContent: doc.pageContent,
+          metadata: doc.metadata,
+        });
+      }
+      logger.info(`BM25 index updated with ${docs.length} documents (total: ${this.bm25Index.documents.length})`);
     }
 
     // Build graph if enabled
@@ -489,6 +760,59 @@ class VectorStoreManager {
       logger.error('Similarity search failed:', err);
       end();
       return [];
+    }
+  }
+
+  /**
+   * Hybrid search combining vector similarity and BM25 keyword matching
+   * using Reciprocal Rank Fusion (RRF).
+   * Falls back to pure vector search if hybrid is disabled or BM25 index is empty.
+   */
+  async hybridSearch(query, k = parseInt(process.env.RETRIEVE_K) || 3, filter = undefined) {
+    if (!this.useHybridSearch || this.bm25Index.documents.length === 0) {
+      return this.similaritySearch(query, k, filter);
+    }
+
+    const end = retrievalDuration.startTimer();
+    try {
+      const candidateCount = Math.max(k * 3, 10);
+
+      // 1. Vector search
+      const vectorResults = await this.similaritySearch(query, candidateCount, filter);
+
+      // 2. BM25 search
+      const bm25Results = this.bm25Index.search(query, candidateCount, filter);
+
+      // 3. Reciprocal Rank Fusion
+      const rrfK = this.hybridRrfK;
+      const scoreMap = new Map(); // pageContent → { doc, score }
+
+      vectorResults.forEach((doc, rank) => {
+        const key = doc.pageContent;
+        const existing = scoreMap.get(key) || { doc, score: 0 };
+        existing.score += 1 / (rank + rrfK);
+        scoreMap.set(key, existing);
+      });
+
+      bm25Results.forEach((doc, rank) => {
+        const key = doc.pageContent;
+        const existing = scoreMap.get(key) || { doc: { pageContent: doc.pageContent, metadata: doc.metadata }, score: 0 };
+        existing.score += 1 / (rank + rrfK);
+        scoreMap.set(key, existing);
+      });
+
+      const fused = Array.from(scoreMap.values())
+        .sort((a, b) => b.score - a.score)
+        .slice(0, k)
+        .map(entry => ({ ...entry.doc, score: entry.score }));
+
+      end();
+      logger.info(`Hybrid search: ${vectorResults.length} vector + ${bm25Results.length} BM25 → ${fused.length} fused results`);
+      return fused;
+    } catch (err) {
+      logger.error('Hybrid search failed, falling back to vector search:', err);
+      end();
+      return this.similaritySearch(query, k, filter);
     }
   }
 

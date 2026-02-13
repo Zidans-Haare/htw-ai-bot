@@ -309,7 +309,7 @@ async function streamChat(req, res) {
     const accessFilter = { access_level: { $in: allowedLevels } };
 
     if (vectorStore.store) {
-      const relevantDocs = await vectorStore.similaritySearch(prompt, 3, accessFilter);
+      const relevantDocs = await vectorStore.hybridSearch(prompt, 3, accessFilter);
       hochschulContent = relevantDocs.map(doc => doc.pageContent).join('\n\n');
       if (vectorStore.graphData) {
         const graphContext = await vectorStore.getGraphSummary(prompt, vectorStore.graphData);
