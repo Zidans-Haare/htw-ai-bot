@@ -1,4 +1,4 @@
-const { HochschuhlABC, Questions, Images, Conversation, Message } = require('./db.cjs');
+const { HochschuhlABC, Questions, Images, Conversation, Message, UserProfiles } = require('./db.cjs');
 const auth = require('./authController.cjs');
 const { getImageList } = require('../utils/imageProvider.js');
 const { estimateTokens, isWithinTokenLimit } = require('../utils/tokenizer');
@@ -9,6 +9,7 @@ const vectorStore = require('../lib/vectorStore');
 const { buildOpenMensaContext, shouldHandleOpenMensa } = require('../utils/openmensa');
 const { getMcpTools, executeMcpTool } = require('../utils/mcpTools');
 const { rerankDocuments } = require('../utils/reranker');
+const { extractMemories, mergeMemories } = require('../utils/memoryExtractor');
 
 // Lazy import to avoid immediate API key check
 let categorizeConversation = null;
@@ -296,13 +297,31 @@ async function streamChat(req, res) {
 
     // Determine user role and allowed access levels
     let userRole = 'public';
+    let userId = null;
     try {
       const token = req.cookies[auth.ADMIN_SESSION_COOKIE] || req.cookies[auth.USER_SESSION_COOKIE];
       if (token) {
         const session = await auth.getSession(token);
-        if (session) userRole = session.role;
+        if (session) {
+          userRole = session.role;
+          userId = session.userId || session.user_id || null;
+        }
       }
     } catch (e) { console.error('Auth check in chat failed', e); }
+
+    // Load user memory if available
+    let userMemory = [];
+    if (userId && process.env.USER_MEMORY_ENABLED === 'true') {
+      try {
+        const profile = await UserProfiles.findUnique({ where: { user_id: userId } });
+        if (profile?.memory) {
+          userMemory = typeof profile.memory === 'string'
+            ? JSON.parse(profile.memory)
+            : profile.memory;
+          if (!Array.isArray(userMemory)) userMemory = [];
+        }
+      } catch (e) { console.error('Failed to load user memory:', e.message); }
+    }
 
     const allowedLevels = getAllowedAccessLevels(userRole);
     // Simple $in filter for Chroma (LangChain translates or Chroma accepts)
@@ -434,6 +453,11 @@ async function streamChat(req, res) {
       Keep responses compact (ideally under 150 German words), use short paragraphs or bullet lists, and highlight the key next steps.
       Offer the user a follow-up option instead of overloading them with details (e.g. frage nach, ob mehr Infos gewünscht sind).
       ${userDisplayName ? `Wenn bekannt, sprich den Nutzer mit dem Namen "${userDisplayName}" an.` : ''}
+      ${userMemory.length > 0 ? `
+      **Known facts about this user** (from previous conversations):
+      ${userMemory.map(m => `- ${m.fact}`).join('\n      ')}
+      Use these facts to personalize your responses naturally, without explicitly referencing that you "remember" them unless the user asks.
+      ` : ''}
 
       ${dateAndTime}.
       ${timezoneInfo}
@@ -620,6 +644,22 @@ async function streamChat(req, res) {
     }
 
     await trackChatInteraction(sessionId, prompt, fullResponseText, wasSuccessful, responseTime, tokensUsed);
+
+    // Extract and save user memories asynchronously (fire-and-forget)
+    if (userId && process.env.USER_MEMORY_ENABLED === 'true') {
+      extractMemories(messages, userMemory)
+        .then(async (newFacts) => {
+          if (newFacts.length > 0) {
+            const updated = mergeMemories(userMemory, newFacts, convoId);
+            await UserProfiles.update({
+              where: { user_id: userId },
+              data: { memory: updated }
+            });
+            console.log(`Saved ${newFacts.length} new memories for user ${userId}`);
+          }
+        })
+        .catch(err => console.error('Memory extraction failed:', err.message));
+    }
 
     const referencedArticleIds = extractArticleIds(fullResponseText);
     for (const articleId of referencedArticleIds) {

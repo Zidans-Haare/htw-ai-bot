@@ -242,6 +242,7 @@ model user_profiles {
   favorite_prompts  Json     @default("[]")
   shortcuts         Json     @default("[]")
   ui_settings       Json     @default("{}")
+  memory            Json     @default("[]")
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
   user              users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
