@@ -8,6 +8,7 @@ const { chatCompletion, chatCompletionStream } = require('../utils/aiProvider');
 const vectorStore = require('../lib/vectorStore');
 const { buildOpenMensaContext, shouldHandleOpenMensa } = require('../utils/openmensa');
 const { getMcpTools, executeMcpTool } = require('../utils/mcpTools');
+const { rerankDocuments } = require('../utils/reranker');
 
 // Lazy import to avoid immediate API key check
 let categorizeConversation = null;
@@ -309,7 +310,17 @@ async function streamChat(req, res) {
     const accessFilter = { access_level: { $in: allowedLevels } };
 
     if (vectorStore.store) {
-      const relevantDocs = await vectorStore.hybridSearch(prompt, 3, accessFilter);
+      const retrieveK = parseInt(process.env.RETRIEVE_K) || 3;
+      const rerankerEnabled = process.env.RERANKER_ENABLED === 'true';
+      const rerankerCandidates = parseInt(process.env.RERANKER_CANDIDATES) || 10;
+      const candidates = await vectorStore.hybridSearch(
+        prompt,
+        rerankerEnabled ? rerankerCandidates : retrieveK,
+        accessFilter
+      );
+      const relevantDocs = rerankerEnabled
+        ? await rerankDocuments(prompt, candidates, retrieveK)
+        : candidates;
       hochschulContent = relevantDocs.map(doc => doc.pageContent).join('\n\n');
       if (vectorStore.graphData) {
         const graphContext = await vectorStore.getGraphSummary(prompt, vectorStore.graphData);
