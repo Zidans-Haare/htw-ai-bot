@@ -313,55 +313,25 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
                   <section className="flex flex-col gap-5">
                     <div className="flex items-center justify-between px-2">
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="material-symbols-outlined text-slate-400">key</span>
-                        API Keys
+                        <span className="material-symbols-outlined text-slate-400">bar_chart</span>
+                        Nutzung & Features
                       </h3>
                     </div>
-                    <div className="rounded-3xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 p-6 shadow-sm flex flex-col gap-6">
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Active API Key</label>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <div className="relative flex-1">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                              <span className="material-symbols-outlined text-[20px]">vpn_key</span>
+                    <div className="rounded-3xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 p-6 shadow-sm flex flex-col gap-4">
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nutzung diesen Monat</label>
+                        <span className="text-xs font-bold text-slate-500">{systemStatus ? `${systemStatus.usage.monthlyChats} Anfragen` : '...'}</span>
+                      </div>
+                      {systemStatus && (
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(systemStatus.features).map(([key, enabled]) => (
+                            <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
+                              <span className="material-symbols-outlined text-[12px]">{enabled ? 'check_circle' : 'cancel'}</span>
+                              {key === 'hybridSearch' ? 'Hybrid Search' : key === 'reranker' ? 'Reranker' : key === 'userMemory' ? 'User Memory' : key === 'semanticChunking' ? 'Semantic Chunking' : key}
                             </span>
-                            <input
-                              className="w-full rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 pl-11 pr-5 py-3 text-slate-600 dark:text-slate-400 font-mono text-sm focus:border-slate-400 focus:outline-none focus:ring-0 shadow-inner"
-                              type="password"
-                              placeholder="sk-..."
-                              value={localSettings.apiKey || ''}
-                              onChange={(e) => update('apiKey', e.target.value)}
-                            />
-                          </div>
-                          {/* 
-                          <button className="shrink-0 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95">
-                            Validate
-                          </button> 
-                          */}
+                          ))}
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 font-medium italic">
-                          {localSettings.apiKey ? 'Key configured locally' : 'Using server-side environment key'}
-                        </p>
-                      </div>
-
-                      <div className="h-px w-full bg-slate-100 dark:bg-slate-700"></div>
-
-                      <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nutzung diesen Monat</label>
-                          <span className="text-xs font-bold text-slate-500">{systemStatus ? `${systemStatus.usage.monthlyChats} Anfragen` : '...'}</span>
-                        </div>
-                        {systemStatus && (
-                          <div className="flex flex-wrap gap-2">
-                            {Object.entries(systemStatus.features).map(([key, enabled]) => (
-                              <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
-                                <span className="material-symbols-outlined text-[12px]">{enabled ? 'check_circle' : 'cancel'}</span>
-                                {key === 'hybridSearch' ? 'Hybrid Search' : key === 'reranker' ? 'Reranker' : key === 'userMemory' ? 'User Memory' : key === 'semanticChunking' ? 'Semantic Chunking' : key}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </section>
 
