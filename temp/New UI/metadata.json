@@ -1,8 +1,0 @@
-
-{
-  "name": "Nexus Assistant",
-  "description": "A clean, modern, and high-performance internal AI collaborator for enterprise teams, featuring advanced chat capabilities and comprehensive personalization options.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
-}

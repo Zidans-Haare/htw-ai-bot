@@ -1,33 +1,50 @@
 node_modules/
 nohup.out
 logs/
-hochschuhl-abc.db*
-.hochschuhl-abc.db.swp
-chatbot.db*
-.env
-.env.*
-.claude
-.vs/
-.vscode/
-.venv/
-scripts/*.txt
 server.log
-.venv_htc/
-uploads/
-public/admin/milkdown_editor/
-cache/
-.DS_Store
-
-.vectordb_last_sync
-dist/
-server/lib/generated/prisma
 vite.log
 build.log
-public_bak
-public/assets/docs/document-1760603075895-908491976.pdf
-prisma/test-temp.db
-backups
-abc_old.db
-uploads_
-hochschul-abc.db
+
+# Databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.DS_Store
+.vs/
+.vscode/
+.claude
+
+# Python
+.venv/
+.venv_htc/
+
+# Build output
+dist/
+server/lib/generated/prisma
+
+# Uploads & backups
+uploads/
+uploads_/
+backups/
+cache/
+public_bak/
+
+# Temp & generated
+temp/
+next-app/
+Einrichtung/
 .pm2/
+.vectordb_last_sync
+
+# Legacy / misc
+public/admin/milkdown_editor/
+public/assets/docs/document-1760603075895-908491976.pdf
+scripts/*.txt

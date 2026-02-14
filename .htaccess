@@ -1,5 +1,0 @@
-RewriteEngine On
-RewriteCond %{HTTP_HOST} ^aski\.htw-dresden\.de$ [OR]
-RewriteCond %{HTTP_HOST} ^www\.aski\.htw-dresden\.de$
-RewriteCond %{REQUEST_URI} !^/cron/cron.php$
-RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P]
