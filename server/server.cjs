@@ -577,6 +577,49 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/api/system-status', async (req, res) => {
+  const start = Date.now();
+  try {
+    // Ping DB for latency
+    await prisma.$queryRaw`SELECT 1`;
+    const dbLatency = Date.now() - start;
+
+    // Get usage stats for current month
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [monthlyChats, totalConversations, mcpServers] = await Promise.all([
+      prisma.chat_interactions.count({ where: { created_at: { gte: monthStart } } }),
+      prisma.conversations.count(),
+      prisma.mcpServer.findMany({ where: { enabled: true }, select: { name: true } }),
+    ]);
+
+    const aiProvider = process.env.AI_PROVIDER || 'unknown';
+    const aiModel = process.env.AI_MODEL || 'default';
+    const vectorDb = process.env.VECTOR_DB_TYPE || 'none';
+
+    res.json({
+      status: 'online',
+      latencyMs: dbLatency,
+      ai: { provider: aiProvider, model: aiModel },
+      vectorDb,
+      mcpServers: mcpServers.map(s => s.name),
+      usage: {
+        monthlyChats,
+        totalConversations,
+      },
+      features: {
+        hybridSearch: process.env.HYBRID_SEARCH_ENABLED !== 'false',
+        reranker: process.env.RERANKER_ENABLED === 'true',
+        userMemory: process.env.USER_MEMORY_ENABLED === 'true',
+        semanticChunking: (process.env.CHUNKING_STRATEGY || 'semantic') === 'semantic',
+      },
+      uptime: Math.floor(process.uptime()),
+    });
+  } catch (err) {
+    res.json({ status: 'degraded', latencyMs: Date.now() - start, error: err.message });
+  }
+});
+
 /**
  * @swagger
  * /api/vector-health:

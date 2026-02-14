@@ -1,7 +1,18 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppSettings, User } from '../types';
 import { DEFAULT_SETTINGS, MOCK_USER, AVATAR_OPTIONS } from '../constants';
+
+interface SystemStatus {
+  status: 'online' | 'degraded' | 'offline';
+  latencyMs: number;
+  ai: { provider: string; model: string };
+  vectorDb: string;
+  mcpServers: string[];
+  usage: { monthlyChats: number; totalConversations: number };
+  features: { hybridSearch: boolean; reranker: boolean; userMemory: boolean; semanticChunking: boolean };
+  uptime: number;
+}
 
 interface Props {
   settings: AppSettings;
@@ -18,6 +29,16 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [localUser, setLocalUser] = useState<User>(user);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'API') {
+      fetch('/api/system-status')
+        .then(r => r.json())
+        .then(data => setSystemStatus(data))
+        .catch(() => setSystemStatus({ status: 'offline', latencyMs: 0, ai: { provider: '?', model: '?' }, vectorDb: 'none', mcpServers: [], usage: { monthlyChats: 0, totalConversations: 0 }, features: { hybridSearch: false, reranker: false, userMemory: false, semanticChunking: false }, uptime: 0 }));
+    }
+  }, [activeTab]);
 
   const update = <K extends keyof AppSettings>(k: K, v: AppSettings[K]) => {
     setLocalSettings(prev => ({ ...prev, [k]: v }));
@@ -246,19 +267,47 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
                         <div>
                           <h3 className="text-base font-bold text-slate-900 dark:text-white">System Status</h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Verbunden mit HTW Cloud</span>
+                            {systemStatus ? (
+                              <>
+                                <span className="relative flex h-2.5 w-2.5">
+                                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${systemStatus.status === 'online' ? 'bg-emerald-400' : 'bg-amber-400'} opacity-75`}></span>
+                                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${systemStatus.status === 'online' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                                </span>
+                                <span className={`text-xs font-bold ${systemStatus.status === 'online' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                  {systemStatus.ai.provider === 'google' ? 'Google Gemini' : systemStatus.ai.provider === 'openai' ? 'OpenAI' : systemStatus.ai.provider === 'claude' ? 'Anthropic Claude' : systemStatus.ai.provider} &middot; {systemStatus.ai.model}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-slate-400 font-bold">Verbindung wird geprüft...</span>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-bold">Latency</span>
-                        <span className="text-sm font-bold text-slate-900 dark:text-white font-mono">12ms</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white font-mono">{systemStatus ? `${systemStatus.latencyMs}ms` : '...'}</span>
                       </div>
                     </div>
+                    {systemStatus && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-1">
+                        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 p-4 text-center shadow-sm">
+                          <span className="block text-lg font-bold text-slate-900 dark:text-white">{systemStatus.mcpServers.length}</span>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Tools</span>
+                        </div>
+                        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 p-4 text-center shadow-sm">
+                          <span className="block text-lg font-bold text-slate-900 dark:text-white">{systemStatus.usage.totalConversations}</span>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Chats</span>
+                        </div>
+                        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 p-4 text-center shadow-sm">
+                          <span className="block text-lg font-bold text-slate-900 dark:text-white">{systemStatus.vectorDb === 'none' ? 'Aus' : systemStatus.vectorDb}</span>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">VectorDB</span>
+                        </div>
+                        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 p-4 text-center shadow-sm">
+                          <span className="block text-lg font-bold text-slate-900 dark:text-white">{Math.floor(systemStatus.uptime / 60)}m</span>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Uptime</span>
+                        </div>
+                      </div>
+                    )}
                   </section>
 
                   <section className="flex flex-col gap-5">
@@ -299,12 +348,19 @@ const SettingsModal: React.FC<Props> = ({ settings, user, onUpdateUser, onSave, 
 
                       <div className="flex flex-col gap-4">
                         <div className="flex justify-between items-center">
-                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Usage Quota</label>
-                          <span className="text-xs font-bold text-slate-500">854 / 2000 Requests</span>
+                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nutzung diesen Monat</label>
+                          <span className="text-xs font-bold text-slate-500">{systemStatus ? `${systemStatus.usage.monthlyChats} Anfragen` : '...'}</span>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                          <div className="bg-slate-900 dark:bg-white h-2 rounded-full transition-all duration-1000" style={{ width: '42.7%' }}></div>
-                        </div>
+                        {systemStatus && (
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(systemStatus.features).map(([key, enabled]) => (
+                              <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
+                                <span className="material-symbols-outlined text-[12px]">{enabled ? 'check_circle' : 'cancel'}</span>
+                                {key === 'hybridSearch' ? 'Hybrid Search' : key === 'reranker' ? 'Reranker' : key === 'userMemory' ? 'User Memory' : key === 'semanticChunking' ? 'Semantic Chunking' : key}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
