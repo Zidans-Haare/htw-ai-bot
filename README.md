@@ -50,7 +50,7 @@ npm run build
 pm2 start ecosystem.config.js
 ```
 
-Die App läuft unter `http://localhost:3000`. Standard-Admin: `admin` / `admin`.
+Die App läuft unter `http://localhost:3000`.
 
 ## Konfiguration
 
@@ -169,6 +169,10 @@ npm test              # Interaktiv (.env oder .env.test wählen)
 npm run test:direct   # Direkt mit .env
 npm run test:coverage # Mit Coverage-Report
 ```
+
+## Dokumentation
+
+Ausführliche Dokumentation mit Architektur-Details, allen Umgebungsvariablen und Erklärungen: [CodeWiki](https://codewiki.google/github.com/zidans-haare/htw-ai-bot)
 
 ## Lizenz
 
