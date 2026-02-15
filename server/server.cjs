@@ -230,10 +230,10 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://aframe.io"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.tailwindcss.com"],
       imgSrc: ["'self'", "data:", "https://picsum.photos", "https://ui-avatars.com"],
-      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://ui-avatars.com"],
+      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://ui-avatars.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -545,6 +545,12 @@ app.get('/admin', async (req, res) => {
   } else {
     res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'admin', 'index.html'));
   }
+});
+
+// --- WebXR Route ---
+app.get('/xr', (req, res) => {
+  setHtmlNoCache(res);
+  res.sendFile(path.join(__dirname, '..', 'dist', 'src', 'webxr', 'index.html'));
 });
 
 // --- Insufficient Permissions Route ---

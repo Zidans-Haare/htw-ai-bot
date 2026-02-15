@@ -74,6 +74,11 @@ export default defineConfig(({ mode }) => {
               return next();
             }
 
+            if (pathname === '/xr' || pathname === '/xr/') {
+              req.url = '/src/webxr/index.html';
+              return next();
+            }
+
             next();
           });
         },
@@ -111,6 +116,7 @@ export default defineConfig(({ mode }) => {
           admin: adminEntry, // Use the dynamically determined admin entry point
           dash: resolve(__dirname, 'src/dash/index.html'),
           login: resolve(__dirname, 'src/login/index.html'),
+          webxr: resolve(__dirname, 'src/webxr/index.html'),
         },
         output: {
           entryFileNames: 'assets/[name].[hash].js',

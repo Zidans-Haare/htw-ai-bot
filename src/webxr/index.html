@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASKI - WebXR Chat</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #000; }
+
+    #chat-overlay {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+      width: 90%;
+      max-width: 500px;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 24px;
+      background: rgba(30, 30, 30, 0.9);
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+    }
+
+    #chat-input::placeholder { color: #888; }
+
+    #send-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 24px;
+      background: #4a9eff;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #send-btn:hover { background: #3a8eef; }
+    #send-btn:disabled { background: #555; cursor: not-allowed; }
+
+    #vr-btn {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      padding: 14px 24px;
+      background: #4a9eff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 10;
+      display: none;
+    }
+
+    #vr-btn:hover { background: #3a8eef; }
+
+    #info {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      background: rgba(0,0,0,0.7);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Maus ziehen = Umsehen | WASD = Bewegen</div>
+  <button id="vr-btn">Enter VR</button>
+
+  <div id="chat-overlay">
+    <input id="chat-input" type="text" placeholder="Frage eingeben..." autocomplete="off" />
+    <button id="send-btn">Senden</button>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+    import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js';
+
+    // --- Three.js Setup ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a1a);
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.6, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.xr.enabled = true;
+    renderer.xr.setFramebufferScaleFactor(2.0);
+    document.body.appendChild(renderer.domElement);
+
+    // --- VR Button ---
+    const vrBtnContainer = VRButton.createButton(renderer);
+    vrBtnContainer.style.display = 'none';
+    document.body.appendChild(vrBtnContainer);
+
+    const vrBtn = document.getElementById('vr-btn');
+    const infoEl = document.getElementById('info');
+
+    async function checkXR() {
+      if (navigator.xr) {
+        const supported = await navigator.xr.isSessionSupported('immersive-vr').catch(() => false);
+        if (supported) {
+          vrBtn.style.display = 'block';
+          vrBtn.addEventListener('click', () => {
+            vrBtnContainer.click();
+          });
+        }
+      }
+    }
+    checkXR();
+
+    // Track VR session state
+    renderer.xr.addEventListener('sessionstart', () => {
+      infoEl.textContent = 'VR aktiv — Eingabe unten funktioniert weiter';
+      vrBtn.style.display = 'none';
+    });
+    renderer.xr.addEventListener('sessionend', () => {
+      infoEl.textContent = 'Maus ziehen = Umsehen | WASD = Bewegen';
+      vrBtn.style.display = 'block';
+    });
+
+    // --- Lights ---
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+    // --- Ground ---
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(10, 10),
+      new THREE.MeshStandardMaterial({ color: 0x111122 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // --- Reference pillars ---
+    const pillarGeo = new THREE.BoxGeometry(0.3, 1, 0.3);
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x1a3a5c });
+    const pillar1 = new THREE.Mesh(pillarGeo, pillarMat);
+    pillar1.position.set(-2, 0.5, -4);
+    scene.add(pillar1);
+    const pillar2 = new THREE.Mesh(pillarGeo, pillarMat);
+    pillar2.position.set(2, 0.5, -4);
+    scene.add(pillar2);
+
+    // --- Chat Panel (canvas texture) ---
+    const panelCanvas = document.createElement('canvas');
+    panelCanvas.width = 1024;
+    panelCanvas.height = 680;
+    const ctx = panelCanvas.getContext('2d');
+    const panelTexture = new THREE.CanvasTexture(panelCanvas);
+
+    const panelMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.2, 0.8),
+      new THREE.MeshBasicMaterial({ map: panelTexture })
+    );
+    panelMesh.position.set(0, 1.5, -2);
+    scene.add(panelMesh);
+
+    let currentResponse = 'Willkommen! Stelle eine Frage...';
+    let currentQuestion = '';
+
+    function drawPanel() {
+      const w = panelCanvas.width;
+      const h = panelCanvas.height;
+
+      // Background
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, w, h);
+
+      // Border
+      ctx.strokeStyle = '#4a9eff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(2, 2, w - 4, h - 4);
+
+      // Title bar
+      ctx.fillStyle = '#16213e';
+      ctx.fillRect(0, 0, w, 70);
+      ctx.fillStyle = '#4a9eff';
+      ctx.font = 'bold 32px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('ASKI - HTW Assistent', w / 2, 46);
+
+      // Response text
+      ctx.fillStyle = '#e0e0e0';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'left';
+      wrapText(ctx, currentResponse, 30, 120, w - 60, 32);
+
+      // Divider
+      ctx.strokeStyle = '#4a9eff';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(20, h - 100);
+      ctx.lineTo(w - 20, h - 100);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Question echo
+      if (currentQuestion) {
+        ctx.fillStyle = '#888888';
+        ctx.font = '20px Arial';
+        ctx.fillText('> ' + currentQuestion, 30, h - 60);
+      }
+
+      panelTexture.needsUpdate = true;
+    }
+
+    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      let lineY = y;
+      const maxY = panelCanvas.height - 120;
+
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        const metrics = context.measureText(testLine);
+        if (metrics.width > maxWidth && line !== '') {
+          context.fillText(line.trim(), x, lineY);
+          line = word + ' ';
+          lineY += lineHeight;
+          if (lineY > maxY) {
+            context.fillText('...', x, lineY);
+            return;
+          }
+        } else {
+          line = testLine;
+        }
+      }
+      context.fillText(line.trim(), x, lineY);
+    }
+
+    drawPanel();
+
+    // --- Simple mouse look (non-VR only) ---
+    let yaw = 0, pitch = 0;
+    let isPointerDown = false;
+
+    renderer.domElement.addEventListener('pointerdown', () => { isPointerDown = true; });
+    document.addEventListener('pointerup', () => { isPointerDown = false; });
+    document.addEventListener('pointermove', (e) => {
+      if (!isPointerDown || renderer.xr.isPresenting) return;
+      yaw -= e.movementX * 0.003;
+      pitch -= e.movementY * 0.003;
+      pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+    });
+
+    // WASD
+    const keys = {};
+    document.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+    document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+    // --- Render loop ---
+    renderer.setAnimationLoop(() => {
+      // Non-VR movement
+      if (!renderer.xr.isPresenting) {
+        const speed = 0.05;
+        const dir = new THREE.Vector3();
+        if (keys['w']) dir.z -= speed;
+        if (keys['s']) dir.z += speed;
+        if (keys['a']) dir.x -= speed;
+        if (keys['d']) dir.x += speed;
+        dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+        camera.position.add(dir);
+        camera.rotation.set(pitch, yaw, 0, 'YXZ');
+      }
+
+      renderer.render(scene, camera);
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Chat logic ---
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    let conversationId = null;
+
+    async function sendMessage() {
+      const question = input.value.trim();
+      if (!question) return;
+
+      input.value = '';
+      sendBtn.disabled = true;
+      currentQuestion = question;
+      currentResponse = '...';
+      drawPanel();
+
+      try {
+        const body = { prompt: question };
+        if (conversationId) body.conversationId = conversationId;
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        if (data.conversationId) conversationId = data.conversationId;
+
+        currentResponse = data.response || 'Keine Antwort erhalten.';
+        drawPanel();
+      } catch (err) {
+        console.error('Chat error:', err);
+        currentResponse = 'Fehler: ' + err.message;
+        drawPanel();
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>
