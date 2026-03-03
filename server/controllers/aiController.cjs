@@ -363,28 +363,41 @@ async function streamChat(req, res) {
     const imageBaseUrl = buildImageBaseUrl(req);
     const imageInstructionBase = imageBaseUrl ? imageBaseUrl.replace(/\/+$/, '') : '/uploads/images';
 
+    // Categorize conversation and update DB
+    let classification = null;
+    try {
+      const categorizer = loadCategorizer();
+      const categorizeInput = history
+        .map(msg => ({ role: msg.role === 'model' ? 'assistant' : msg.role, content: msg.content }))
+        .concat({ role: 'user', content: prompt });
+      classification = await categorizer(categorizeInput);
+      if (classification && classification.category) {
+        await Conversation.update({
+          where: { id: conversation.id },
+          data: {
+            category: classification.category,
+            ai_confidence: classification.confidence || 0,
+          },
+        });
+        console.log(`[Categorizer] Updated conversation ${conversation.id} -> ${classification.category} (${classification.confidence})`);
+      }
+    } catch (err) {
+      console.warn('Categorization failed:', err.message);
+    }
+
     let openMensaSection = '';
     let openMensaMetadata = null;
     if (process.env.OPENMENSA_ENABLED !== 'false') {
+      const categoryName = (classification && classification.category) ? classification.category : '';
       let useOpenMensa = shouldHandleOpenMensa(prompt);
       if (!useOpenMensa) {
-        try {
-          const categorizer = loadCategorizer();
-          const categorizeInput = history
-            .map(msg => ({ role: msg.role === 'model' ? 'assistant' : msg.role, content: msg.content }))
-            .concat({ role: 'user', content: prompt });
-          const classification = await categorizer(categorizeInput);
-          const categoryName = (classification && classification.category) ? classification.category : '';
-          if (categoryName.toLowerCase().includes('mensa')) {
+        if (categoryName.toLowerCase().includes('mensa')) {
+          useOpenMensa = true;
+        } else if (classification && classification.category === 'Campus-Leben & Mensa') {
+          const confidence = typeof classification.confidence === 'number' ? classification.confidence : 0;
+          if (confidence >= 0.05) {
             useOpenMensa = true;
-          } else if (classification && classification.category === 'Campus-Leben & Mensa') {
-            const confidence = typeof classification.confidence === 'number' ? classification.confidence : 0;
-            if (confidence >= 0.05) {
-              useOpenMensa = true;
-            }
           }
-        } catch (err) {
-          console.warn('OpenMensa categorization failed:', err.message);
         }
       }
 
