@@ -86,6 +86,7 @@ router.get('/kpis', async (req, res) => {
 router.get('/recent-feedback', async (req, res) => {
     try {
         const recentFeedback = await Feedback.findMany({
+            where: { rating: null },
             orderBy: { submitted_at: 'desc' },
             take: 10,
             select: { text: true, submitted_at: true, rating: true, email: true }
