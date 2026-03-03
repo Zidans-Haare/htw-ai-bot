@@ -15,10 +15,28 @@ interface Props {
   onOpenMenu: () => void;
   onDeleteChat: (id: string) => void;
   onToggleFavorite: (id: string) => void;
-  onOpenFeedback: (messageId: string, rating?: 'up' | 'down') => void;
+  onOpenFeedback: (messageId: string) => void;
 }
 
 const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, onToggleThinking, onOpenMenu, onDeleteChat, onToggleFavorite, onOpenFeedback }) => {
+  const [votedMessages, setVotedMessages] = useState<Record<string, 'up' | 'down'>>({});
+
+  const handleVote = async (messageId: string, vote: 'up' | 'down') => {
+    setVotedMessages(prev => ({ ...prev, [messageId]: vote }));
+    try {
+      await fetch('/api/feedback/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating: vote === 'up' ? 1 : -1,
+          conversation_id: chat?.id,
+          message_id: messageId,
+        }),
+      });
+    } catch (e) {
+      console.error('Vote error:', e);
+    }
+  };
   const [inputValue, setInputValue] = useState('');
   const [attachedImages, setAttachedImages] = useState<{ data: string; mimeType: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -247,15 +265,15 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
                   {msg.role === 'assistant' && (
                     <div className="flex items-center gap-1 mt-1 ml-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                       <button
-                        onClick={() => onOpenFeedback(msg.id, 'up')}
-                        className="p-1 rounded-full text-slate-300 dark:text-slate-600 hover:text-emerald-500 transition-all active:scale-90"
+                        onClick={() => handleVote(msg.id, 'up')}
+                        className={`p-1 rounded-full transition-all active:scale-90 ${votedMessages[msg.id] === 'up' ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600 hover:text-emerald-500'}`}
                         title="Hilfreich"
                       >
                         <span className="material-symbols-outlined text-[16px]">thumb_up</span>
                       </button>
                       <button
-                        onClick={() => onOpenFeedback(msg.id, 'down')}
-                        className="p-1 rounded-full text-slate-300 dark:text-slate-600 hover:text-red-500 transition-all active:scale-90"
+                        onClick={() => handleVote(msg.id, 'down')}
+                        className={`p-1 rounded-full transition-all active:scale-90 ${votedMessages[msg.id] === 'down' ? 'text-red-500' : 'text-slate-300 dark:text-slate-600 hover:text-red-500'}`}
                         title="Nicht hilfreich"
                       >
                         <span className="material-symbols-outlined text-[16px]">thumb_down</span>

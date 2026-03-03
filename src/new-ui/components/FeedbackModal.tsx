@@ -5,15 +5,12 @@ import { ChatSession } from '../types';
 interface Props {
   conversationId?: string;
   messageId?: string;
-  rating?: 'up' | 'down';
   chat?: ChatSession;
   onClose: () => void;
 }
 
-const FeedbackModal: React.FC<Props> = ({ conversationId, messageId, rating, chat, onClose }) => {
-  const [text, setText] = useState(
-    rating === 'up' ? 'Positive Bewertung' : rating === 'down' ? 'Negative Bewertung' : ''
-  );
+const FeedbackModal: React.FC<Props> = ({ conversationId, messageId, chat, onClose }) => {
+  const [text, setText] = useState('');
   const [email, setEmail] = useState('');
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
@@ -87,10 +84,8 @@ const FeedbackModal: React.FC<Props> = ({ conversationId, messageId, rating, cha
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <span className={`material-symbols-outlined ${rating === 'up' ? 'text-emerald-500' : rating === 'down' ? 'text-red-500' : 'text-slate-400'}`}>
-              {rating === 'up' ? 'thumb_up' : rating === 'down' ? 'thumb_down' : 'feedback'}
-            </span>
-            {rating === 'up' ? 'Was war hilfreich?' : rating === 'down' ? 'Was war nicht hilfreich?' : 'Feedback senden'}
+            <span className="material-symbols-outlined text-slate-400">feedback</span>
+            Feedback senden
           </h2>
           <button
             onClick={onClose}

@@ -75,4 +75,56 @@ router.post('/', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/feedback/rate:
+ *   post:
+ *     summary: Quick-Rating (Daumen hoch/runter) ohne Captcha
+ *     tags: [Feedback]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rating
+ *             properties:
+ *               rating:
+ *                 type: integer
+ *                 enum: [1, -1]
+ *                 description: 1 = positiv, -1 = negativ
+ *               conversation_id:
+ *                 type: string
+ *               message_id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Rating gespeichert
+ *       400:
+ *         description: Ungültiges Rating
+ */
+router.post('/rate', async (req, res) => {
+    const { rating, conversation_id, message_id } = req.body;
+
+    if (rating !== 1 && rating !== -1) {
+        return res.status(400).json({ message: 'Rating must be 1 or -1.' });
+    }
+
+    try {
+        await Feedback.create({
+            data: {
+                text: rating === 1 ? 'Positive Bewertung' : 'Negative Bewertung',
+                rating: rating,
+                conversation_id: conversation_id || null,
+                attached_chat_history: message_id ? `Message-ID: ${message_id}` : null
+            }
+        });
+        res.sendStatus(200);
+    } catch (err) {
+        console.error('Rating error:', err.message);
+        res.status(500).json({ message: 'Rating konnte nicht gespeichert werden.' });
+    }
+});
+
 module.exports = router;

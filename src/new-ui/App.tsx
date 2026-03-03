@@ -24,7 +24,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [feedbackState, setFeedbackState] = useState<{ open: boolean; messageId?: string; rating?: 'up' | 'down' }>({ open: false });
+  const [feedbackState, setFeedbackState] = useState<{ open: boolean; messageId?: string }>({ open: false });
 
 
   // Initial Boot Sequence & Session Check
@@ -324,7 +324,7 @@ const App: React.FC = () => {
           onOpenMenu={() => setIsSidebarOpen(true)}
           onDeleteChat={deleteChat}
           onToggleFavorite={toggleFavorite}
-          onOpenFeedback={(messageId, rating) => setFeedbackState({ open: true, messageId, rating })}
+          onOpenFeedback={(messageId) => setFeedbackState({ open: true, messageId })}
         />
 
         {isSettingsOpen && user && (
@@ -341,7 +341,6 @@ const App: React.FC = () => {
           <FeedbackModal
             conversationId={currentChatId || undefined}
             messageId={feedbackState.messageId}
-            rating={feedbackState.rating}
             chat={currentChat}
             onClose={() => setFeedbackState({ open: false })}
           />
