@@ -1475,7 +1475,7 @@ class DashboardManager {
 document.addEventListener('DOMContentLoaded', async () => {
     // Validate session before proceeding
     try {
-        const res = await fetch('/api/validate');
+        const res = await fetch('/api/admin/validate');
         if (!res.ok) {
             console.log('Session invalid, redirecting to login...');
             window.location.href = '/login/';
