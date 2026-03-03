@@ -15,9 +15,10 @@ interface Props {
   onOpenMenu: () => void;
   onDeleteChat: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onOpenFeedback: (messageId: string, rating?: 'up' | 'down') => void;
 }
 
-const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, onToggleThinking, onOpenMenu, onDeleteChat, onToggleFavorite }) => {
+const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, onToggleThinking, onOpenMenu, onDeleteChat, onToggleFavorite, onOpenFeedback }) => {
   const [inputValue, setInputValue] = useState('');
   const [attachedImages, setAttachedImages] = useState<{ data: string; mimeType: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -205,38 +206,67 @@ const ChatArea: React.FC<Props> = ({ chat, isLoading, onSendMessage, settings, o
             </div>
           ) : (
             (searchQuery ? filteredMessages : chat.messages).map(msg => (
-              <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
+              <div key={msg.id} className={`group/msg flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
                 {msg.role === 'assistant' && (
                   <div className={`size-7 md:size-8 rounded-lg flex items-center justify-center shrink-0 shadow-md ${msg.isThinking ? 'bg-indigo-600' : 'bg-slate-900 dark:bg-white'} text-white dark:text-slate-900`}>
                     <span className="material-symbols-outlined text-[16px] md:text-[18px]">{msg.isThinking ? 'psychology' : 'smart_toy'}</span>
                   </div>
                 )}
-                <div className={`max-w-[90%] md:max-w-[85%] p-3 md:p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-slate-900 text-white rounded-tr-sm' : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-tl-sm'}`}>
-                  {msg.isThinking && msg.role === 'assistant' && (
-                    <div className="text-[9px] font-bold text-indigo-500 mb-2 flex items-center gap-1 uppercase tracking-widest">
-                      <span className="material-symbols-outlined text-[10px] md:text-[12px]">verified</span> Reasoned Output
-                    </div>
-                  )}
+                <div className="flex flex-col max-w-[90%] md:max-w-[85%]">
+                  <div className={`p-3 md:p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-slate-900 text-white rounded-tr-sm' : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-tl-sm'}`}>
+                    {msg.isThinking && msg.role === 'assistant' && (
+                      <div className="text-[9px] font-bold text-indigo-500 mb-2 flex items-center gap-1 uppercase tracking-widest">
+                        <span className="material-symbols-outlined text-[10px] md:text-[12px]">verified</span> Reasoned Output
+                      </div>
+                    )}
 
-                  {/* Markdown Content */}
-                  <div
-                    className="prose prose-sm dark:prose-invert max-w-none leading-relaxed text-[13px] md:text-sm break-words"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content) as string) }}
-                  />
+                    {/* Markdown Content */}
+                    <div
+                      className="prose prose-sm dark:prose-invert max-w-none leading-relaxed text-[13px] md:text-sm break-words"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content) as string) }}
+                    />
 
-                  {/* Image Gallery */}
-                  {msg.images && msg.images.length > 0 && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {msg.images.map((img, idx) => (
-                        <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
-                          <img
-                            src={img.url}
-                            alt={img.description || img.filename}
-                            className="w-full h-32 object-cover transition-transform group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                        </div>
-                      ))}
+                    {/* Image Gallery */}
+                    {msg.images && msg.images.length > 0 && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {msg.images.map((img, idx) => (
+                          <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <img
+                              src={img.url}
+                              alt={img.description || img.filename}
+                              className="w-full h-32 object-cover transition-transform group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Bar - Assistant messages only */}
+                  {msg.role === 'assistant' && (
+                    <div className="flex items-center gap-1 mt-1 ml-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => onOpenFeedback(msg.id, 'up')}
+                        className="p-1 rounded-full text-slate-300 dark:text-slate-600 hover:text-emerald-500 transition-all active:scale-90"
+                        title="Hilfreich"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">thumb_up</span>
+                      </button>
+                      <button
+                        onClick={() => onOpenFeedback(msg.id, 'down')}
+                        className="p-1 rounded-full text-slate-300 dark:text-slate-600 hover:text-red-500 transition-all active:scale-90"
+                        title="Nicht hilfreich"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">thumb_down</span>
+                      </button>
+                      <button
+                        onClick={() => onOpenFeedback(msg.id)}
+                        className="p-1 rounded-full text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-all active:scale-90"
+                        title="Feedback senden"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">feedback</span>
+                      </button>
                     </div>
                   )}
                 </div>

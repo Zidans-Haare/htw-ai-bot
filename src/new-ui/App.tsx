@@ -7,6 +7,7 @@ import AuthScreens from './components/AuthScreens';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import SettingsModal from './components/SettingsModal';
+import FeedbackModal from './components/FeedbackModal';
 import { gemini } from './services/geminiService';
 import { authService } from './services/authService';
 import { historyService } from './services/historyService';
@@ -23,6 +24,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [feedbackState, setFeedbackState] = useState<{ open: boolean; messageId?: string; rating?: 'up' | 'down' }>({ open: false });
 
 
   // Initial Boot Sequence & Session Check
@@ -322,6 +324,7 @@ const App: React.FC = () => {
           onOpenMenu={() => setIsSidebarOpen(true)}
           onDeleteChat={deleteChat}
           onToggleFavorite={toggleFavorite}
+          onOpenFeedback={(messageId, rating) => setFeedbackState({ open: true, messageId, rating })}
         />
 
         {isSettingsOpen && user && (
@@ -331,6 +334,16 @@ const App: React.FC = () => {
             onUpdateUser={handleUpdateUser}
             onSave={setSettings}
             onClose={() => setIsSettingsOpen(false)}
+          />
+        )}
+
+        {feedbackState.open && (
+          <FeedbackModal
+            conversationId={currentChatId || undefined}
+            messageId={feedbackState.messageId}
+            rating={feedbackState.rating}
+            chat={currentChat}
+            onClose={() => setFeedbackState({ open: false })}
           />
         )}
       </main>
