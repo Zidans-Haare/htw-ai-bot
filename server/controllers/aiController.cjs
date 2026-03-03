@@ -638,15 +638,6 @@ async function streamChat(req, res) {
       fullResponseText = fullResponseText.replace(/\s*<\+>\s*$/, '').trimEnd();
     }
 
-    await Message.create({
-      data: {
-        conversation_id: convoId,
-        role: 'model',
-        content: fullResponseText,
-        created_at: new Date(),
-      },
-    });
-    console.log(`Saved AI response to DB: ${fullResponseText.slice(0, 50)}...`);
 
     const responseTime = Date.now() - startTime;
     const tokensUsed = estimateTokens(fullResponseText);
