@@ -340,7 +340,7 @@ class DashboardManager {
 
     renderRecentFeedback(feedback) {
         const container = document.getElementById('recent-feedback');
-        
+
         if (!feedback || feedback.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -351,14 +351,23 @@ class DashboardManager {
             return;
         }
 
+        const ratingBadge = (rating) => {
+            if (rating === 1) return '<span class="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full"><i class="fas fa-thumbs-up text-[10px]"></i>Positiv</span>';
+            if (rating === -1) return '<span class="inline-flex items-center gap-1 text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full"><i class="fas fa-thumbs-down text-[10px]"></i>Negativ</span>';
+            return '<span class="inline-flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full"><i class="fas fa-comment text-[10px]"></i>Text</span>';
+        };
+
         container.innerHTML = feedback.map(item => `
             <div class="feedback-item">
-                <p class="text-gray-700 text-sm mb-2 leading-relaxed">
-                    ${this.truncateText(this.escapeHtml(item.feedback_text), 150)}
-                </p>
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <p class="text-gray-700 text-sm leading-relaxed flex-1">
+                        ${this.truncateText(this.escapeHtml(item.text || item.feedback_text || ''), 150)}
+                    </p>
+                    ${ratingBadge(item.rating)}
+                </div>
                 <div class="flex justify-between items-center text-xs text-gray-500">
-                    <span>${this.formatDate(item.timestamp)}</span>
-                    <i class="fas fa-quote-right opacity-50"></i>
+                    <span>${this.formatDate(item.submitted_at || item.timestamp)}</span>
+                    ${item.email ? `<span class="text-gray-400"><i class="fas fa-envelope mr-1"></i>${this.escapeHtml(item.email)}</span>` : ''}
                 </div>
             </div>
         `).join('');
@@ -461,7 +470,58 @@ class DashboardManager {
     }
 
     renderFeedbackStats(stats) {
-        // These elements were removed from HTML, so skip this
+        const container = document.getElementById('feedback-rating-stats');
+        if (!container) return;
+
+        if (!stats || stats.total === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-chart-pie text-gray-400"></i>
+                    <p>Noch keine Bewertungen</p>
+                </div>
+            `;
+            return;
+        }
+
+        const pctPos = Math.round((stats.positive / stats.total) * 100);
+        const pctNeg = Math.round((stats.negative / stats.total) * 100);
+        const pctUn = 100 - pctPos - pctNeg;
+
+        container.innerHTML = `
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-full h-6 rounded-full overflow-hidden flex bg-gray-100">
+                    ${pctPos > 0 ? `<div class="bg-green-500 h-full" style="width:${pctPos}%"></div>` : ''}
+                    ${pctNeg > 0 ? `<div class="bg-red-500 h-full" style="width:${pctNeg}%"></div>` : ''}
+                    ${pctUn > 0 ? `<div class="bg-gray-300 h-full" style="width:${pctUn}%"></div>` : ''}
+                </div>
+                <div class="w-full space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span class="text-sm text-gray-700">Positiv</span>
+                        </div>
+                        <span class="text-sm font-bold text-gray-900">${stats.positive} (${pctPos}%)</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span class="text-sm text-gray-700">Negativ</span>
+                        </div>
+                        <span class="text-sm font-bold text-gray-900">${stats.negative} (${pctNeg}%)</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-gray-300"></div>
+                            <span class="text-sm text-gray-700">Nicht bewertet</span>
+                        </div>
+                        <span class="text-sm font-bold text-gray-900">${stats.unrated} (${pctUn}%)</span>
+                    </div>
+                </div>
+                <div class="w-full pt-3 border-t border-gray-100 text-center">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-bold">Gesamt: ${stats.total}</span>
+                </div>
+            </div>
+        `;
     }
 
     renderContentStats(stats) {

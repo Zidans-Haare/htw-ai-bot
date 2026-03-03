@@ -87,8 +87,8 @@ router.get('/recent-feedback', async (req, res) => {
     try {
         const recentFeedback = await Feedback.findMany({
             orderBy: { submitted_at: 'desc' },
-            take: 5,
-            select: { text: true, submitted_at: true }
+            take: 10,
+            select: { text: true, submitted_at: true, rating: true, email: true }
         });
 
         res.json(recentFeedback);
@@ -278,49 +278,19 @@ router.get('/most-viewed-articles', async (req, res) => {
 
 router.get('/feedback-stats', async (req, res) => {
     try {
-        // Simple positive/negative classification based on keywords
-        const positiveFeedback = await Feedback.count({
-            where: {
-                OR: [
-                    { text: { contains: 'gut' } },
-                    { text: { contains: 'super' } },
-                    { text: { contains: 'toll' } },
-                    { text: { contains: 'danke' } },
-                    { text: { contains: 'hilfreich' } },
-                    { text: { contains: 'perfekt' } },
-                    { text: { contains: 'klasse' } }
-                ]
-            }
-        });
+        const [positive, negative, total] = await Promise.all([
+            Feedback.count({ where: { rating: 1 } }),
+            Feedback.count({ where: { rating: -1 } }),
+            Feedback.count()
+        ]);
 
-        const negativeFeedback = await Feedback.count({
-            where: {
-                OR: [
-                    { text: { contains: 'schlecht' } },
-                    { text: { contains: 'fehler' } },
-                    { text: { contains: 'falsch' } },
-                    { text: { contains: 'problem' } },
-                    { text: { contains: 'schwierig' } },
-                    { text: { contains: 'unverständlich' } }
-                ]
-            }
-        });
-
-        // Feedback over time (last 7 days)
-        const sevenDaysAgoGerman = getGermanDaysAgo(7);
-
-        const feedbackData = await Feedback.findMany({
-            select: {
-                submitted_at: true
-            }
-        });
-
-        const feedbackOverTime = groupByGermanDate(feedbackData, 'submitted_at', sevenDaysAgoGerman);
+        const unrated = total - positive - negative;
 
         res.json({
-            positiveFeedback,
-            negativeFeedback,
-            feedbackOverTime
+            positive,
+            negative,
+            unrated,
+            total
         });
     } catch (error) {
         console.error('Error fetching feedback stats:', error);
