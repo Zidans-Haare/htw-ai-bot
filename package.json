@@ -41,7 +41,7 @@
     "@prisma/client": "^6.17.1",
     "@toast-ui/editor": "^3.2.2",
     "archiver": "^7.0.1",
-    "axios": "^1.13.2",
+    "axios": "1.13.2",
     "axios-cookiejar-support": "^6.0.5",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^11.10.0",
